@@ -1,0 +1,6 @@
+{
+  "name": "Dexterx Cenima",
+  "description": "Dexterx Cenima — Royal obsidian-violet cinema, series, and anime streaming vault crafted by Ghost Dexter.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
