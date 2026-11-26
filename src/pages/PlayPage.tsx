@@ -9,13 +9,7 @@ import {
   Tv,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import {
-  getPlayerSandbox,
-  normalizePlayerMediaType,
-  normalizePlayerProvider,
-  PLAYER_PROVIDERS,
-} from '../shared/playerSources';
-import type { MediaDetail, MediaSummary, PlayerProviderId, SeasonDetail } from '../shared/types';
+import MediaCard from '../components/MediaCard';
 import { fetchTitleDetail, resolvePlayerSession } from '../lib/api';
 import { buildPlayUrl, navigateTo, useAppLocation } from '../lib/router';
 import {
@@ -25,16 +19,33 @@ import {
   subscribeVaultUpdates,
   toggleFavorite,
 } from '../lib/vaultStorage';
-import MediaCard from '../components/MediaCard';
+import {
+  getPlayerSandbox,
+  normalizePlayerMediaType,
+  normalizePlayerProvider,
+  PLAYER_PROVIDERS,
+} from '../shared/playerSources';
+import type {
+  MediaDetail,
+  MediaSummary,
+  PlayerProviderId,
+  SeasonDetail,
+  StreamingPlatform,
+  UserProfile,
+} from '../shared/types';
+import { isAllowedOnPlatform } from '../shared/vaultCatalog';
 import DirectPlayerPage from './DirectPlayerPage';
 
 interface PlayPageProps {
+  platform: StreamingPlatform;
+  activeProfile: UserProfile;
   onInspect: (item: MediaSummary) => void;
 }
 
-export default function PlayPage({ onInspect }: PlayPageProps) {
+export default function PlayPage({ platform, activeProfile, onInspect }: PlayPageProps) {
+  const isKids = platform === 'netflix' && activeProfile.isKids;
   const loc = useAppLocation();
-  const tmdbId = Number(loc.params.get('tmdbId') || 693134);
+  const tmdbId = Number(loc.params.get('tmdbId') || (isKids ? 1022789 : 693134));
   const mediaType = normalizePlayerMediaType(loc.params.get('type'));
   const provider = normalizePlayerProvider(loc.params.get('provider'));
   const season = Math.max(1, Number(loc.params.get('season') || 1));
@@ -57,7 +68,7 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
 
   useEffect(() => {
     let cancelled = false;
-    fetchTitleDetail(tmdbId, mediaType)
+    fetchTitleDetail(tmdbId, mediaType, isKids, platform)
       .then((data) => {
         if (!cancelled && data) {
           setDetail(data);
@@ -67,7 +78,7 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [tmdbId, mediaType]);
+  }, [tmdbId, mediaType, isKids, platform]);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,7 +100,7 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [tmdbId, mediaType, provider, season, episode]);
+  }, [tmdbId, mediaType, provider, season, episode, platform]);
 
   const title = detail?.title || fallbackTitle;
   const poster = detail?.poster || fallbackPoster;
@@ -97,7 +108,6 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
   const year = detail?.year || fallbackYear;
   const score = detail?.score || fallbackScore;
 
-  // Save Continue Watching progress whenever title/episode loads
   useEffect(() => {
     if (!tmdbId) return;
     savePlayRecord({
@@ -115,7 +125,20 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
       progressSeconds: 0,
       durationSeconds: 0,
     });
-  }, [tmdbId, mediaType, title, poster, backdrop, year, score, season, episode, provider, seasonDetail, detail]);
+  }, [
+    tmdbId,
+    mediaType,
+    title,
+    poster,
+    backdrop,
+    year,
+    score,
+    season,
+    episode,
+    provider,
+    seasonDetail,
+    detail,
+  ]);
 
   const switchParams = (next: {
     provider?: PlayerProviderId;
@@ -143,16 +166,18 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
   const saved = isFavorited(mediaType, tmdbId);
   const totalSeasons = detail?.seasons || 1;
   const totalEpisodes = seasonDetail?.episodeCount || 10;
+  const safeRecs = (detail?.recommendations || []).filter((r) =>
+    isAllowedOnPlatform(r, platform, isKids),
+  );
 
   return (
-    <div className="w-full px-4 pt-22 pb-10 sm:px-6 lg:px-12">
-      {/* Top Theater Control Header */}
+    <div className="w-full px-4 pt-22 pb-10 sm:px-6 lg:px-12 bg-[var(--dx-bg)]">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={() => window.history.back()}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-purple-500/25 bg-[#120924] text-purple-200 hover:border-purple-400 hover:text-white cursor-pointer"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[4px] border border-white/20 bg-[var(--dx-surface)] text-white hover:border-white cursor-pointer"
             aria-label="Go back"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -161,7 +186,7 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
             <h1 className="truncate font-display text-xl font-extrabold text-white sm:text-2xl">
               {title}
             </h1>
-            <p className="text-xs text-purple-300/80 font-mono-num">
+            <p className="text-xs text-[#b3b3b3] font-mono-num">
               {mediaType === 'tv' ? `Season ${season} · Episode ${episode}` : 'Feature Presentation'}
               {year ? ` · ${year}` : ''}
               {score ? ` · ★ ${score}` : ''}
@@ -173,7 +198,7 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
           <button
             type="button"
             onClick={() => setReloadNonce((n) => n + 1)}
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-purple-500/25 bg-[#120924] px-3.5 text-xs font-semibold text-purple-200 hover:border-purple-400 hover:text-white cursor-pointer"
+            className="inline-flex h-10 items-center gap-2 rounded-[4px] border border-white/20 bg-[var(--dx-surface)] px-3.5 text-xs font-semibold text-white hover:border-white cursor-pointer"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             <span>Reload Stream</span>
@@ -203,20 +228,27 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
               });
               setTick((t) => t + 1);
             }}
-            className={`inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-xs font-semibold transition-colors cursor-pointer ${
+            className={`inline-flex h-10 items-center gap-2 rounded-[4px] border px-4 text-xs font-semibold transition-colors cursor-pointer ${
               saved
-                ? 'border-purple-400 bg-purple-600/30 text-white'
-                : 'border-purple-500/25 bg-[#120924] text-purple-200 hover:border-purple-400'
+                ? 'border-white bg-white text-black'
+                : 'border-white/20 bg-[var(--dx-surface)] text-white hover:border-white'
             }`}
           >
-            <Bookmark className={`h-3.5 w-3.5 ${saved ? 'fill-current text-purple-300' : ''}`} />
-            <span>{saved ? 'Saved' : 'Save'}</span>
+            <Bookmark className={`h-3.5 w-3.5 ${saved ? 'fill-current' : ''}`} />
+            <span>
+              {saved
+                ? 'Saved'
+                : platform === 'crunchyroll'
+                  ? 'Watchlist'
+                  : platform === 'prime'
+                    ? 'My Stuff'
+                    : 'My List'}
+            </span>
           </button>
         </div>
       </div>
 
-      {/* Main Theater Frame */}
-      <div className="overflow-hidden rounded-2xl border border-purple-500/30 bg-black dx-purple-glow">
+      <div className="overflow-hidden rounded-[4px] border border-white/15 bg-black shadow-2xl">
         <div className="aspect-video w-full bg-black">
           {provider === 'bingr' ? (
             <DirectPlayerPage
@@ -239,17 +271,16 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
-              <div className="h-10 w-10 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--dx-accent)] border-t-transparent" />
             </div>
           )}
         </div>
       </div>
 
-      {/* Multi-Provider Server Switcher */}
-      <div className="mt-5 rounded-2xl border border-purple-500/25 bg-[#0d061a] p-4 sm:p-5">
+      <div className="mt-5 rounded-[4px] border border-white/10 bg-[var(--dx-surface)] p-4 sm:p-5">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2 text-sm font-semibold text-purple-200">
-            <Server className="h-4 w-4 text-purple-400" />
+          <div className="flex items-center gap-2 text-sm font-semibold text-white">
+            <Server className="h-4 w-4 text-[var(--dx-accent)]" />
             <span>Streaming Servers</span>
           </div>
 
@@ -259,7 +290,7 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
                 type="button"
                 disabled={episode <= 1}
                 onClick={() => switchParams({ episode: Math.max(1, episode - 1) })}
-                className="inline-flex h-9 items-center gap-1 rounded-lg border border-purple-500/25 bg-[#140a29] px-3 text-xs font-semibold text-purple-200 hover:border-purple-400 hover:text-white disabled:opacity-40 cursor-pointer"
+                className="inline-flex h-9 items-center gap-1 rounded-[4px] border border-white/20 bg-[var(--dx-surface-card)] px-3 text-xs font-semibold text-white hover:border-white disabled:opacity-40 cursor-pointer"
               >
                 <ChevronLeft className="h-4 w-4" />
                 <span>Prev Ep</span>
@@ -268,7 +299,7 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
                 type="button"
                 disabled={episode >= totalEpisodes}
                 onClick={() => switchParams({ episode: episode + 1 })}
-                className="inline-flex h-9 items-center gap-1 rounded-lg border border-purple-500/25 bg-[#140a29] px-3 text-xs font-semibold text-purple-200 hover:border-purple-400 hover:text-white disabled:opacity-40 cursor-pointer"
+                className="inline-flex h-9 items-center gap-1 rounded-[4px] border border-white/20 bg-[var(--dx-surface-card)] px-3 text-xs font-semibold text-white hover:border-white disabled:opacity-40 cursor-pointer"
               >
                 <span>Next Ep</span>
                 <ChevronRight className="h-4 w-4" />
@@ -285,14 +316,14 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
                 key={p.id}
                 type="button"
                 onClick={() => switchParams({ provider: p.id })}
-                className={`flex flex-col items-start rounded-xl border px-4 py-2 text-left transition-colors cursor-pointer ${
+                className={`flex flex-col items-start rounded-[4px] border px-4 py-2 text-left transition-colors cursor-pointer ${
                   active
-                    ? 'border-purple-400 bg-purple-600 text-white shadow-[0_0_20px_rgba(147,51,234,0.4)]'
-                    : 'border-purple-500/25 bg-[#140a29] text-purple-200 hover:border-purple-400/60 hover:text-white'
+                    ? 'border-[var(--dx-accent)] bg-[var(--dx-accent)] text-white'
+                    : 'border-white/15 bg-[var(--dx-surface-card)] text-[#e5e5e5] hover:border-white'
                 }`}
               >
                 <span className="text-xs font-bold">{p.label}</span>
-                <span className={`text-[11px] ${active ? 'text-purple-100' : 'text-purple-300/65'}`}>
+                <span className={`text-[11px] ${active ? 'text-white/90' : 'text-[#808080]'}`}>
                   {p.tagline}
                 </span>
               </button>
@@ -301,27 +332,26 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
         </div>
       </div>
 
-      {/* Season & Episode Picker for TV & Anime */}
       {mediaType === 'tv' && (
-        <div className="mt-6 rounded-2xl border border-purple-500/25 bg-[#0d061a] p-5">
+        <div className="mt-6 rounded-[4px] border border-white/10 bg-[var(--dx-surface)] p-5">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-base font-bold text-white">
-              <Tv className="h-4 w-4 text-purple-400" />
+              <Tv className="h-4 w-4 text-[var(--dx-accent)]" />
               <span>Episodes</span>
             </div>
 
             {totalSeasons > 1 && (
               <div className="flex flex-wrap items-center gap-1.5">
-                <Layers className="mr-1 h-4 w-4 text-purple-300/70" />
+                <Layers className="mr-1 h-4 w-4 text-[#808080]" />
                 {Array.from({ length: totalSeasons }, (_, i) => i + 1).map((sNum) => (
                   <button
                     key={sNum}
                     type="button"
                     onClick={() => switchParams({ season: sNum, episode: 1 })}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold font-mono-num transition-colors cursor-pointer ${
+                    className={`rounded-[3px] px-3 py-1.5 text-xs font-semibold font-mono-num transition-colors cursor-pointer ${
                       season === sNum
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-[#140a29] text-purple-200 hover:text-white'
+                        ? 'bg-[var(--dx-accent)] text-white'
+                        : 'bg-[var(--dx-surface-elevated)] text-[#b3b3b3] hover:text-white'
                     }`}
                   >
                     S{sNum}
@@ -339,10 +369,10 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
                   key={ep.id}
                   type="button"
                   onClick={() => switchParams({ episode: ep.episodeNumber })}
-                  className={`flex items-center gap-3 rounded-xl border p-2.5 text-left transition-colors cursor-pointer ${
+                  className={`flex items-center gap-3 rounded-[4px] border p-2.5 text-left transition-colors cursor-pointer ${
                     isCurrent
-                      ? 'border-purple-400 bg-purple-600/35 text-white'
-                      : 'border-purple-500/20 bg-[#140a29] text-purple-200 hover:border-purple-400/50 hover:text-white'
+                      ? 'border-[var(--dx-accent)] bg-[var(--dx-accent)]/20 text-white'
+                      : 'border-white/10 bg-[var(--dx-surface-card)] text-[#e5e5e5] hover:border-white/40'
                   }`}
                 >
                   {ep.still && (
@@ -350,11 +380,11 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
                       src={ep.still}
                       alt={ep.title}
                       referrerPolicy="no-referrer"
-                      className="h-14 w-24 shrink-0 rounded-lg object-cover border border-purple-500/25"
+                      className="h-14 w-24 shrink-0 rounded-[2px] object-cover"
                     />
                   )}
                   <div className="min-w-0">
-                    <span className="font-mono-num text-xs font-bold text-purple-300">
+                    <span className="font-mono-num text-xs font-bold text-[var(--dx-accent)]">
                       Episode {ep.episodeNumber}
                     </span>
                     <p className="mt-0.5 line-clamp-1 text-xs font-semibold text-white">
@@ -368,39 +398,36 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
         </div>
       )}
 
-      {/* Synopsis & Recommendations */}
       {detail && (
         <div className="mt-8 space-y-8">
-          <div className="rounded-2xl border border-purple-500/20 bg-[#0d061a] p-6">
+          <div className="rounded-[4px] border border-white/10 bg-[var(--dx-surface)] p-6">
             <h2 className="font-display text-lg font-bold text-white">About {detail.title}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-purple-100/80">
-              {detail.overview}
-            </p>
-            {detail.cast.length > 0 && (
+            <p className="mt-2 text-sm leading-relaxed text-[#d2d2d2]">{detail.overview}</p>
+            {detail.cast.length > 0 && !isKids && platform !== 'crunchyroll' && (
               <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                 {detail.cast.slice(0, 8).map((c) => (
                   <button
                     key={c.id}
                     type="button"
                     onClick={() => navigateTo(`/person/${c.id}`)}
-                    className="flex items-center gap-2.5 rounded-xl border border-purple-500/20 bg-[#140a29] p-2 text-left hover:border-purple-400 hover:text-white cursor-pointer"
+                    className="flex items-center gap-2.5 rounded-[4px] border border-white/10 bg-[var(--dx-surface-card)] p-2 text-left hover:border-white/40 cursor-pointer"
                   >
                     {c.profile ? (
                       <img
                         src={c.profile}
                         alt={c.name}
                         referrerPolicy="no-referrer"
-                        className="h-9 w-9 shrink-0 rounded-lg object-cover border border-purple-500/30"
+                        className="h-9 w-9 shrink-0 rounded object-cover"
                       />
                     ) : (
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-900/60 font-display text-xs font-bold text-purple-200">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-[#333] font-display text-xs font-bold text-white">
                         {c.name.slice(0, 1)}
                       </div>
                     )}
                     <div className="min-w-0">
                       <p className="truncate text-xs font-semibold text-white">{c.name}</p>
                       {c.character && (
-                        <p className="truncate text-[11px] text-purple-300/75">{c.character}</p>
+                        <p className="truncate text-[11px] text-[#808080]">{c.character}</p>
                       )}
                     </div>
                   </button>
@@ -409,16 +436,16 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
             )}
           </div>
 
-          {detail.recommendations.length > 0 && (
+          {safeRecs.length > 0 && (
             <section>
-              <h2 className="mb-4 font-display text-xl font-bold text-white">
-                Recommended Next
-              </h2>
-              <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                {detail.recommendations.slice(0, 5).map((rec) => (
+              <h2 className="mb-4 font-display text-xl font-bold text-white">More Like This</h2>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6">
+                {safeRecs.slice(0, 6).map((rec) => (
                   <MediaCard
                     key={`${rec.mediaType}-${rec.id}`}
                     item={rec}
+                    variant="poster"
+                    platform={platform}
                     onSelect={onInspect}
                   />
                 ))}

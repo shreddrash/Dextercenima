@@ -1,23 +1,41 @@
-import { Bookmark, Film, Play, Tv, Users, X } from 'lucide-react';
+import { Check, Film, Play, Plus, ThumbsUp, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { MediaDetail, MediaSummary } from '../shared/types';
 import { fetchTitleDetail } from '../lib/api';
 import { buildPlayUrl, navigateTo } from '../lib/router';
-import { isFavorited, subscribeVaultUpdates, toggleFavorite } from '../lib/vaultStorage';
-import MediaCard from './MediaCard';
+import {
+  isFavorited,
+  isLiked,
+  subscribeVaultUpdates,
+  toggleFavorite,
+  toggleLike,
+} from '../lib/vaultStorage';
+import type { MediaDetail, MediaSummary, StreamingPlatform } from '../shared/types';
+import { isAllowedOnPlatform } from '../shared/vaultCatalog';
 import PosterArtwork from './PosterArtwork';
 
 interface DetailModalProps {
   item: MediaSummary | null;
+  platform: StreamingPlatform;
+  isKidsMode?: boolean;
   onClose: () => void;
   onSelectOther: (item: MediaSummary) => void;
 }
 
-export default function DetailModal({ item, onClose, onSelectOther }: DetailModalProps) {
+export default function DetailModal({
+  item,
+  platform,
+  isKidsMode = false,
+  onClose,
+  onSelectOther,
+}: DetailModalProps) {
   const [detail, setDetail] = useState<MediaDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [showTrailer, setShowTrailer] = useState(false);
+  const [selectedSeasonIdx, setSelectedSeasonIdx] = useState(0);
   const [, setTick] = useState(0);
+
+  const isPrime = platform === 'prime';
+  const isCrunchy = platform === 'crunchyroll';
 
   useEffect(() => {
     return subscribeVaultUpdates(() => setTick((t) => t + 1));
@@ -27,6 +45,7 @@ export default function DetailModal({ item, onClose, onSelectOther }: DetailModa
     if (!item) {
       setDetail(null);
       setShowTrailer(false);
+      setSelectedSeasonIdx(0);
       return;
     }
 
@@ -38,8 +57,9 @@ export default function DetailModal({ item, onClose, onSelectOther }: DetailModa
     let cancelled = false;
     setLoading(true);
     setShowTrailer(false);
+    setSelectedSeasonIdx(0);
 
-    fetchTitleDetail(item.id, item.mediaType)
+    fetchTitleDetail(item.id, item.mediaType, isKidsMode, platform)
       .then((data) => {
         if (!cancelled && data) {
           setDetail(data);
@@ -54,24 +74,32 @@ export default function DetailModal({ item, onClose, onSelectOther }: DetailModa
       cancelled = true;
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [item, onClose]);
+  }, [item, isKidsMode, platform, onClose]);
 
   if (!item) return null;
 
   const active = detail || {
     ...item,
     imdbId: '',
-    contentRating: item.mediaType === 'tv' ? 'TV-14' : 'PG-13',
+    contentRating:
+      item.maturityRating || (isKidsMode ? 'U/A 7+' : item.mediaType === 'tv' ? 'TV-MA' : 'U/A 16+'),
     directors: [],
     cast: [],
     recommendations: [],
   };
 
   const saved = isFavorited(active.mediaType, active.id);
+  const liked = isLiked(active.mediaType, active.id);
+  const matchPercent = Math.min(99, Math.max(82, Math.round(Number(active.score || 8) * 11)));
+  const seasons = detail?.seasonsDetail || [];
+  const activeSeason = seasons[selectedSeasonIdx] || seasons[0];
+  const recs = (detail?.recommendations || []).filter((r) =>
+    isAllowedOnPlatform(r, platform, isKidsMode),
+  );
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-6 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/75 p-2 pt-8 pb-12 sm:p-6"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -79,20 +107,19 @@ export default function DetailModal({ item, onClose, onSelectOther }: DetailModa
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="dx-glass-panel relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-purple-500/30 bg-[#0d061a]"
+        className="relative w-full max-w-[850px] overflow-hidden rounded-md bg-[var(--dx-surface)] text-white shadow-[0_24px_80px_rgba(0,0,0,0.95)]"
       >
-        {/* Close Button */}
         <button
           type="button"
           onClick={onClose}
           aria-label="Close details"
-          className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-lg border border-purple-400/30 bg-[#05020b]/85 text-purple-100 transition-colors hover:border-purple-300 hover:bg-purple-600 cursor-pointer"
+          className="absolute right-4 top-4 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--dx-surface)] text-white hover:bg-[var(--dx-surface-elevated)] cursor-pointer"
         >
           <X className="h-5 w-5" />
         </button>
 
-        {/* Backdrop / Trailer Header */}
-        <div className="relative h-64 sm:h-80 w-full overflow-hidden bg-[#05020b]">
+        {/* Hero Preview Stage */}
+        <div className="relative h-64 sm:h-[400px] w-full overflow-hidden bg-black">
           {showTrailer && active.trailerEmbedUrl ? (
             <iframe
               src={active.trailerEmbedUrl}
@@ -112,205 +139,256 @@ export default function DetailModal({ item, onClose, onSelectOther }: DetailModa
               />
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0d061a] via-[#0d061a]/50 to-transparent"
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background:
+                    'linear-gradient(to top, var(--dx-surface) 2%, transparent 65%)',
+                }}
               />
-            </>
-          )}
-        </div>
 
-        {/* Main Details Body */}
-        <div className="relative -mt-12 px-6 pb-8 sm:px-8">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-end">
-            <div className="hidden sm:block h-44 w-32 shrink-0 overflow-hidden rounded-xl border border-purple-400/30 bg-[#120924] shadow-2xl">
-              <PosterArtwork src={active.poster} alt={active.title} title={active.title} />
-            </div>
-
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-purple-300/90">
-                <span className="font-mono-num text-purple-200">★ {active.score}</span>
-                <span aria-hidden="true">·</span>
-                <span className="font-mono-num">{active.year}</span>
-                <span aria-hidden="true">·</span>
-                <span>{active.contentRating}</span>
-                {active.runtime ? (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <span className="font-mono-num">{active.runtime} min</span>
-                  </>
-                ) : null}
-                {active.seasons ? (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <span className="font-mono-num">
-                      {active.seasons} Seasons / {active.episodes} Eps
-                    </span>
-                  </>
-                ) : null}
-              </div>
-
-              {active.logo ? (
-                <div className="mt-2 max-w-xs">
+              <div className="absolute inset-x-0 bottom-0 px-6 pb-6 sm:px-10">
+                {active.logo ? (
                   <img
                     src={active.logo}
                     alt={active.title}
                     referrerPolicy="no-referrer"
-                    className="max-h-16 w-auto object-contain drop-shadow-[0_4px_16px_rgba(0,0,0,0.85)]"
+                    className="mb-4 max-h-20 sm:max-h-28 w-auto max-w-xs sm:max-w-sm object-contain drop-shadow-[0_4px_16px_rgba(0,0,0,0.85)]"
                   />
-                </div>
-              ) : (
-                <h2 className="mt-2 font-display text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-                  {active.title}
-                </h2>
-              )}
-
-              <p className="mt-1 text-xs text-purple-300/80">
-                {active.genres.join(' · ')}
-              </p>
-
-              <div className="mt-5 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    navigateTo(
-                      buildPlayUrl({
-                        tmdbId: active.id,
-                        mediaType: active.mediaType,
-                        title: active.title,
-                        year: active.year,
-                        poster: active.poster,
-                        score: active.score,
-                      }),
-                    );
-                  }}
-                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-purple-600 px-5 text-sm font-semibold text-white shadow-[0_0_24px_rgba(147,51,234,0.5)] transition-colors hover:bg-purple-500 cursor-pointer"
-                >
-                  <Play className="h-4 w-4 fill-current" />
-                  <span>Watch Now</span>
-                </button>
-
-                {active.trailerEmbedUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setShowTrailer((prev) => !prev)}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-purple-400/35 bg-[#1b0e36] px-4 text-sm font-semibold text-purple-100 transition-colors hover:bg-purple-800/60 cursor-pointer"
-                  >
-                    <Film className="h-4 w-4" />
-                    <span>{showTrailer ? 'Hide Trailer' : 'Watch Trailer'}</span>
-                  </button>
+                ) : (
+                  <h2 className="mb-4 font-display text-2xl sm:text-4xl font-black tracking-tight text-white drop-shadow">
+                    {active.title}
+                  </h2>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    toggleFavorite(active);
-                    setTick((t) => t + 1);
-                  }}
-                  className={`inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-semibold transition-colors cursor-pointer ${
-                    saved
-                      ? 'border-purple-400 bg-purple-600/30 text-white'
-                      : 'border-purple-500/30 bg-[#120924] text-purple-200 hover:border-purple-400'
-                  }`}
-                >
-                  <Bookmark className={`h-4 w-4 ${saved ? 'fill-current text-purple-300' : ''}`} />
-                  <span>{saved ? 'Saved in Vault' : 'Save to Vault'}</span>
-                </button>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        navigateTo(
+                          buildPlayUrl({
+                            tmdbId: active.id,
+                            mediaType: active.mediaType,
+                            title: active.title,
+                            year: active.year,
+                            poster: active.poster,
+                            score: active.score,
+                          }),
+                        );
+                      }}
+                      className={`inline-flex h-10 items-center gap-2 px-6 text-sm font-bold transition-colors cursor-pointer ${
+                        isPrime
+                          ? 'rounded-lg bg-[#00A8E1] text-white hover:bg-[#1A98FF]'
+                          : isCrunchy
+                            ? 'rounded-[2px] bg-[#F47521] text-black hover:bg-[#FF8A34]'
+                            : 'rounded-[4px] bg-white text-black hover:bg-neutral-200'
+                      }`}
+                    >
+                      <Play className="h-4 w-4 fill-current" />
+                      <span>{isCrunchy ? 'Watch Anime' : isPrime ? 'Watch with Prime' : 'Play'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toggleFavorite(active);
+                        setTick((t) => t + 1);
+                      }}
+                      aria-label={saved ? 'Remove from Watchlist' : 'Add to Watchlist'}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/60 bg-[#2a2a2a]/75 text-white hover:border-white cursor-pointer"
+                    >
+                      {saved ? <Check className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toggleLike(active.mediaType, active.id);
+                        setTick((t) => t + 1);
+                      }}
+                      aria-label="Like title"
+                      className={`flex h-10 w-10 items-center justify-center rounded-full border-2 cursor-pointer ${
+                        liked
+                          ? 'border-white bg-white text-black'
+                          : 'border-white/60 bg-[#2a2a2a]/75 text-white hover:border-white'
+                      }`}
+                    >
+                      <ThumbsUp className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {active.trailerEmbedUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setShowTrailer((prev) => !prev)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-white/40 bg-black/55 px-3.5 text-xs font-semibold text-white hover:border-white cursor-pointer"
+                    >
+                      <Film className="h-3.5 w-3.5" />
+                      <span>{showTrailer ? 'Close Trailer' : 'Trailer'}</span>
+                    </button>
+                  )}
+                </div>
               </div>
+            </>
+          )}
+        </div>
+
+        {/* 2-Column Metadata Section */}
+        <div className="px-6 py-6 sm:px-10">
+          {showTrailer && active.trailerEmbedUrl && (
+            <div className="mb-5 flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  navigateTo(
+                    buildPlayUrl({
+                      tmdbId: active.id,
+                      mediaType: active.mediaType,
+                      title: active.title,
+                      year: active.year,
+                      poster: active.poster,
+                      score: active.score,
+                    }),
+                  );
+                }}
+                className="inline-flex h-10 items-center gap-2 rounded-[4px] bg-[var(--dx-accent)] px-6 text-sm font-bold text-white hover:opacity-90 cursor-pointer"
+              >
+                <Play className="h-4 w-4 fill-current" />
+                <span>Play Full Title</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowTrailer(false)}
+                className="h-10 rounded-[4px] border border-white/30 px-4 text-xs font-semibold text-white hover:border-white cursor-pointer"
+              >
+                Hide Trailer
+              </button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+            <div className="md:col-span-8">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                {isPrime ? (
+                  <span className="font-bold text-[#00A8E1]">✓ Included with Prime</span>
+                ) : isCrunchy ? (
+                  <span className="font-bold text-[#F47521]">Sub | Dub · ★ {active.score || '8.5'}</span>
+                ) : (
+                  <span className="font-bold text-[#46d369]">{matchPercent}% Match</span>
+                )}
+                <span className="text-[#bcbcbc]">{active.year}</span>
+                <span className="border border-white/40 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white">
+                  {active.contentRating}
+                </span>
+                {active.runtime ? <span className="text-[#bcbcbc]">{active.runtime}m</span> : null}
+                {active.seasons ? (
+                  <span className="text-[#bcbcbc]">
+                    {active.seasons} Season{active.seasons > 1 ? 's' : ''}
+                  </span>
+                ) : null}
+                <span className="rounded-[2px] border border-white/40 px-1 text-[10px] font-bold text-[#bcbcbc]">
+                  HD
+                </span>
+              </div>
+
+              <p className="mt-4 text-sm sm:text-[15px] leading-relaxed text-white/90">
+                {active.overview || 'No synopsis available for this title.'}
+              </p>
+            </div>
+
+            <div className="md:col-span-4 space-y-2.5 text-xs leading-relaxed">
+              {active.cast.length > 0 && (
+                <div>
+                  <span className="text-[#777777]">Cast: </span>
+                  {active.cast.slice(0, 5).map((actor, idx) => (
+                    <span key={actor.id}>
+                      {isKidsMode ? (
+                        <span className="text-white">{actor.name}</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onClose();
+                            navigateTo(`/person/${actor.id}`);
+                          }}
+                          className="text-white hover:underline cursor-pointer"
+                        >
+                          {actor.name}
+                        </button>
+                      )}
+                      {idx < Math.min(4, active.cast.length - 1) ? ', ' : ''}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div>
+                <span className="text-[#777777]">Genres: </span>
+                <span className="text-white">{active.genres.join(', ')}</span>
+              </div>
+
+              {active.directors.length > 0 && (
+                <div>
+                  <span className="text-[#777777]">Director: </span>
+                  {active.directors.map((d, idx) => (
+                    <span key={d.id}>
+                      {isKidsMode ? (
+                        <span className="text-white">{d.name}</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onClose();
+                            navigateTo(`/person/${d.id}`);
+                          }}
+                          className="text-white hover:underline cursor-pointer"
+                        >
+                          {d.name}
+                        </button>
+                      )}
+                      {idx < active.directors.length - 1 ? ', ' : ''}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Synopsis */}
-          <p className="mt-6 text-sm leading-relaxed text-purple-100/85 sm:text-base">
-            {active.overview || 'No synopsis available for this title.'}
-          </p>
-
           {loading && (
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-14 animate-pulse rounded-lg bg-purple-950/60" />
-              ))}
+            <div className="mt-6 space-y-2">
+              <div className="h-14 animate-pulse rounded bg-white/5" />
+              <div className="h-14 animate-pulse rounded bg-white/5" />
             </div>
           )}
 
-          {/* Directors & Cast */}
-          {(active.directors.length > 0 || active.cast.length > 0) && (
-            <div className="mt-7 border-t border-purple-500/20 pt-6">
-              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-purple-200">
-                <Users className="h-4 w-4 text-purple-400" />
-                <span>Creators &amp; Cast</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
-                {active.directors.map((dir) => (
-                  <button
-                    key={`dir-${dir.id}`}
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      navigateTo(`/person/${dir.id}`);
-                    }}
-                    className="flex items-center gap-3 rounded-xl border border-purple-400/35 bg-purple-900/30 p-2 text-left transition-colors hover:border-purple-300 hover:bg-purple-700/45 cursor-pointer"
-                  >
-                    {dir.profile ? (
-                      <img
-                        src={dir.profile}
-                        alt={dir.name}
-                        referrerPolicy="no-referrer"
-                        className="h-10 w-10 shrink-0 rounded-lg object-cover border border-purple-400/40"
-                      />
-                    ) : (
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-700/50 font-display text-sm font-bold text-white">
-                        {dir.name.slice(0, 1)}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="truncate text-xs font-semibold text-white">{dir.name}</p>
-                      <p className="truncate text-[11px] text-purple-300">Director</p>
-                    </div>
-                  </button>
-                ))}
-                {active.cast.slice(0, 10).map((actor) => (
-                  <button
-                    key={`cast-${actor.id}`}
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      navigateTo(`/person/${actor.id}`);
-                    }}
-                    className="flex items-center gap-3 rounded-xl border border-purple-500/20 bg-[#160b2e] p-2 text-left transition-colors hover:border-purple-400 hover:bg-[#1e0f3d] cursor-pointer"
-                  >
-                    {actor.profile ? (
-                      <img
-                        src={actor.profile}
-                        alt={actor.name}
-                        referrerPolicy="no-referrer"
-                        className="h-10 w-10 shrink-0 rounded-lg object-cover border border-purple-500/30"
-                      />
-                    ) : (
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-900/60 font-display text-sm font-bold text-purple-200">
-                        {actor.name.slice(0, 1)}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="truncate text-xs font-semibold text-purple-50">{actor.name}</p>
-                      {actor.character && (
-                        <p className="truncate text-[11px] text-purple-300/75">{actor.character}</p>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {activeSeason && activeSeason.episodes.length > 0 && (
+            <div className="mt-8 border-t border-white/10 pt-6">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <h3 className="font-display text-lg sm:text-xl font-bold text-white">Episodes</h3>
 
-          {/* Series Episodes Preview */}
-          {detail?.seasonsDetail && detail.seasonsDetail.length > 0 && (
-            <div className="mt-7 border-t border-purple-500/20 pt-6">
-              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-purple-200">
-                <Tv className="h-4 w-4 text-purple-400" />
-                <span>Quick Episode Launch · {detail.seasonsDetail[0].title}</span>
+                {seasons.length > 1 ? (
+                  <select
+                    value={selectedSeasonIdx}
+                    onChange={(e) => setSelectedSeasonIdx(Number(e.target.value))}
+                    className="rounded border border-white/30 bg-[var(--dx-surface-elevated)] px-3 py-1.5 text-sm font-semibold text-white focus:outline-none"
+                  >
+                    {seasons.map((s, idx) => (
+                      <option key={s.seasonNumber} value={idx}>
+                        {s.title}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="text-sm font-semibold text-[#bcbcbc]">
+                    {activeSeason.title}
+                  </span>
+                )}
               </div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                {detail.seasonsDetail[0].episodes.slice(0, 10).map((ep) => (
+
+              <div className="divide-y divide-white/10">
+                {activeSeason.episodes.slice(0, 12).map((ep) => (
                   <button
                     key={ep.id}
                     type="button"
@@ -329,37 +407,148 @@ export default function DetailModal({ item, onClose, onSelectOther }: DetailModa
                         }),
                       );
                     }}
-                    className="flex flex-col items-start rounded-lg border border-purple-500/20 bg-[#140a29] p-2.5 text-left transition-colors hover:border-purple-400 hover:bg-purple-900/40 cursor-pointer"
+                    className="group flex w-full items-center gap-3.5 py-3.5 px-2 text-left transition-colors hover:bg-[var(--dx-surface-elevated)] rounded cursor-pointer"
                   >
-                    <span className="font-mono-num text-xs font-bold text-purple-300">
-                      S{ep.seasonNumber} · E{ep.episodeNumber}
+                    <span className="w-6 shrink-0 text-center font-display text-lg font-bold text-[#d2d2d2]">
+                      {ep.episodeNumber}
                     </span>
-                    <span className="mt-0.5 line-clamp-1 text-xs text-purple-100/80">
-                      {ep.title}
-                    </span>
+
+                    <div className="relative h-16 w-28 sm:h-20 sm:w-36 shrink-0 overflow-hidden rounded bg-[#2a2a2a]">
+                      <PosterArtwork
+                        src={ep.still || active.backdrop || active.poster}
+                        alt={ep.title}
+                        title={ep.title}
+                        variant="backdrop"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition-opacity group-hover:opacity-100">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white bg-black/60 text-white">
+                          <Play className="h-4 w-4 fill-current" />
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-sm font-semibold text-white">{ep.title}</p>
+                        {ep.runtime && (
+                          <span className="shrink-0 text-xs text-[#bcbcbc]">{ep.runtime}m</span>
+                        )}
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-xs text-[#a3a3a3]">
+                        {ep.overview ||
+                          `Watch ${active.title} — Season ${ep.seasonNumber}, Episode ${ep.episodeNumber}`}
+                      </p>
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Related Recommendations */}
-          {detail?.recommendations && detail.recommendations.length > 0 && (
-            <div className="mt-7 border-t border-purple-500/20 pt-6">
-              <h3 className="mb-4 font-display text-lg font-bold text-white">
+          {recs.length > 0 && (
+            <div className="mt-8 border-t border-white/10 pt-6">
+              <h3 className="mb-4 font-display text-lg sm:text-xl font-bold text-white">
                 More Like This
               </h3>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-5">
-                {detail.recommendations.slice(0, 5).map((rec) => (
-                  <MediaCard
-                    key={`rec-${rec.mediaType}-${rec.id}`}
-                    item={rec}
-                    onSelect={(picked) => onSelectOther(picked)}
-                  />
-                ))}
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+                {recs.slice(0, 6).map((rec) => {
+                  const recMatch = Math.min(99, Math.max(82, Math.round(Number(rec.score || 8) * 11)));
+                  const recSaved = isFavorited(rec.mediaType, rec.id);
+                  return (
+                    <div
+                      key={`rec-${rec.mediaType}-${rec.id}`}
+                      onClick={() => onSelectOther(rec)}
+                      className="group cursor-pointer overflow-hidden rounded-[4px] bg-[var(--dx-surface-card)] transition-colors hover:bg-[var(--dx-surface-elevated)]"
+                    >
+                      <div className="relative aspect-video w-full bg-[#222]">
+                        <PosterArtwork
+                          src={rec.backdrop || rec.poster}
+                          alt={rec.title}
+                          title={rec.title}
+                          variant="backdrop"
+                        />
+                        <span className="absolute right-2 top-2 text-[11px] font-semibold text-white drop-shadow">
+                          {rec.seasons ? `${rec.seasons} Seasons` : rec.year}
+                        </span>
+                      </div>
+
+                      <div className="p-3.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <span
+                              className={`text-xs font-bold ${
+                                isPrime
+                                  ? 'text-[#00A8E1]'
+                                  : isCrunchy
+                                    ? 'text-[#F47521]'
+                                    : 'text-[#46d369]'
+                              }`}
+                            >
+                              {isPrime || isCrunchy ? `★ ${rec.score || '8.2'}` : `${recMatch}% Match`}
+                            </span>
+                            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[#bcbcbc]">
+                              <span className="border border-white/35 px-1 py-0 text-[9px] font-semibold">
+                                {rec.isKids || isKidsMode ? 'U/A 7+' : 'U/A 16+'}
+                              </span>
+                              <span>{rec.year}</span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            aria-label={recSaved ? 'Remove from list' : 'Add to list'}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleFavorite(rec);
+                              setTick((t) => t + 1);
+                            }}
+                            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/50 text-white hover:border-white cursor-pointer"
+                          >
+                            {recSaved ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                          </button>
+                        </div>
+
+                        <p className="mt-2 truncate text-xs font-bold text-white">{rec.title}</p>
+                        <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-[#b3b3b3]">
+                          {rec.overview}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
+
+          <div className="mt-8 border-t border-white/10 pt-6">
+            <h3 className="font-display text-lg font-bold text-white">
+              About <span className="font-normal">{active.title}</span>
+            </h3>
+            <div className="mt-3 space-y-1.5 text-xs text-[#d2d2d2]">
+              {active.directors.length > 0 && (
+                <p>
+                  <span className="text-[#777777]">Director: </span>
+                  {active.directors.map((d) => d.name).join(', ')}
+                </p>
+              )}
+              {active.cast.length > 0 && (
+                <p>
+                  <span className="text-[#777777]">Cast: </span>
+                  {active.cast.slice(0, 8).map((c) => c.name).join(', ')}
+                </p>
+              )}
+              <p>
+                <span className="text-[#777777]">Genres: </span>
+                {active.genres.join(', ')}
+              </p>
+              <p>
+                <span className="text-[#777777]">Maturity Rating: </span>
+                <span className="border border-white/35 px-1.5 py-0.5 text-[10px] font-semibold">
+                  {active.contentRating}
+                </span>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

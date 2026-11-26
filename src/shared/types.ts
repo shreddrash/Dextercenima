@@ -1,21 +1,21 @@
 export type MediaType = 'movie' | 'tv';
-export type DiscoverCategoryFilter = 'movie' | 'tv' | 'anime' | 'hindi' | 'show';
-export type PlayerProviderId =
-  | 'cinesrc'
-  | 'vidfast'
-  | 'vidsrc-buzz'
-  | 'vidsrc-wtf'
-  | 'bingr';
+
+export type StreamingPlatform = 'netflix' | 'prime' | 'crunchyroll';
+
+export type DiscoverCategoryFilter = 'all' | 'movie' | 'tv' | 'anime' | 'hindi' | 'kids' | 'show';
 
 export interface MediaSummary {
   id: number;
   mediaType: MediaType;
-  category?: DiscoverCategoryFilter;
+  category?: 'movie' | 'tv' | 'anime' | 'show' | 'kids';
+  platforms?: StreamingPlatform[];
+  exclusiveOn?: StreamingPlatform;
   title: string;
   logo?: string;
   overview: string;
   poster: string;
   backdrop: string;
+  posterTheme?: 'obsidian' | 'cosmic' | 'noir' | 'anime' | 'thriller';
   score: string;
   voteCount: number;
   year: string;
@@ -26,13 +26,14 @@ export interface MediaSummary {
   genreIds: number[];
   genres: string[];
   language: string;
+  country?: string;
   popularity: number;
   revenue?: number;
-  country?: string;
   companyIds?: number[];
   directorIds?: number[];
   isLimitedSeries?: boolean;
-  posterTheme?: 'cosmic' | 'anime' | 'thriller' | 'obsidian' | 'noir';
+  isKids?: boolean;
+  maturityRating?: string;
 }
 
 export interface CastMember {
@@ -40,7 +41,6 @@ export interface CastMember {
   name: string;
   character: string;
   profile?: string;
-  department?: string;
 }
 
 export interface EpisodeItem {
@@ -51,7 +51,7 @@ export interface EpisodeItem {
   overview: string;
   still?: string;
   airDate?: string;
-  runtime: number | null;
+  runtime?: number | null;
 }
 
 export interface SeasonDetail {
@@ -90,13 +90,21 @@ export interface PersonResult {
   credits?: MediaSummary[];
 }
 
+export type PlayerProviderId = 'cinesrc' | 'bingr' | 'vidfast' | 'vidsrc-buzz' | 'vidsrc-wtf';
+
+export interface PlayerProviderInfo {
+  id: PlayerProviderId;
+  label: string;
+  tagline: string;
+}
+
 export interface PlayRecord {
   key: string;
   tmdbId: number;
   mediaType: MediaType;
   title: string;
   poster: string;
-  backdrop?: string;
+  backdrop: string;
   year: string;
   score: string;
   season: number;
@@ -118,4 +126,25 @@ export interface FavoriteItem {
   score: string;
   genres: string[];
   savedAt: number;
+}
+
+export type ProfileAvatarId =
+  | 'dexter-crest'
+  | 'netflix-red'
+  | 'netflix-blue'
+  | 'netflix-gold'
+  | 'netflix-emerald'
+  | 'netflix-purple'
+  | 'netflix-kids'
+  | 'prime-ghost'
+  | 'crunchyroll-orange';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  avatarId: ProfileAvatarId;
+  isKids: boolean;
+  platform?: StreamingPlatform;
+  preferredLanguage?: string;
+  createdAt: number;
 }

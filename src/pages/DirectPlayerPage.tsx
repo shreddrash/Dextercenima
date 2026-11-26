@@ -92,9 +92,9 @@ export default function DirectPlayerPage({
     <div className="relative flex h-full w-full items-center justify-center bg-black">
       {status === 'loading' && (
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
-          <p className="text-sm font-medium text-purple-200">
-            Resolving Bingr Direct HLS stream...
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--dx-accent)] border-t-transparent" />
+          <p className="text-sm font-medium text-white/80">
+            Resolving Direct HLS stream...
           </p>
         </div>
       )}
@@ -102,7 +102,7 @@ export default function DirectPlayerPage({
       {status === 'error' && (
         <div className="max-w-md px-6 text-center">
           <p className="font-display text-lg font-bold text-white">Direct Stream Unavailable</p>
-          <p className="mt-2 text-sm text-purple-200/80">{errorMsg}</p>
+          <p className="mt-2 text-sm text-white/75">{errorMsg}</p>
         </div>
       )}
 

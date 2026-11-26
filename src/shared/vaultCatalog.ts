@@ -6,7 +6,9 @@ import type {
   MediaType,
   PersonResult,
   SeasonDetail,
+  StreamingPlatform,
 } from './types';
+import { EXTRA_PLATFORM_SEEDS } from './platformSeeds';
 
 export const GENRE_MAP: Record<number, string> = {
   28: 'Action',
@@ -1334,7 +1336,640 @@ const VAULT_SEEDS: VaultSeed[] = [
       { id: 1474636, name: 'Finn Wolfhard', character: 'Mike Wheeler' },
     ],
   },
+  // Kids Movies & Cartoons (Strict Kids-Safe Catalog)
+  {
+    id: 1022789,
+    mediaType: 'movie',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U',
+    imdbId: 'tt22022452',
+    title: 'Inside Out 2',
+    logo: 'https://image.tmdb.org/t/p/w500/h40hblm8J1if7T2CBMjCD85HwuD.png',
+    overview:
+      'Teenager Riley’s mind headquarters is undergoing a sudden demolition to make room for something entirely unexpected: new Emotions like Anxiety, Envy, Ennui, and Embarrassment!',
+    poster: 'https://image.tmdb.org/t/p/w500/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/p5ozvmdgsmbWe0H8Xk7Rc8SCwAB.jpg',
+    posterTheme: 'anime',
+    score: '7.5',
+    voteCount: 5200,
+    year: '2024',
+    releaseDate: '2024-06-11',
+    runtime: 97,
+    seasons: null,
+    episodes: null,
+    genreIds: [16, 12, 35, 10751],
+    genres: ['Animation', 'Adventure', 'Comedy', 'Family'],
+    language: 'en',
+    country: 'US',
+    popularity: 990,
+    contentRating: 'PG',
+    youtubeTrailerKey: 'LEjhY15eCx0',
+    directors: [{ id: 12891, name: 'Kelsey Mann' }],
+    cast: [{ id: 1935224, name: 'Maya Hawke', character: 'Anxiety (voice)' }],
+  },
+  {
+    id: 324857,
+    mediaType: 'movie',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U/A 7+',
+    imdbId: 'tt4633694',
+    title: 'Spider-Man: Into the Spider-Verse',
+    logo: 'https://image.tmdb.org/t/p/w500/xrM5rEtoW0Hd0QXmy5b4WBGZuHd.png',
+    overview:
+      'Teenager Miles Morales becomes the Spider-Man of his universe and must join with five spider-powered individuals from other dimensions to stop a threat.',
+    poster: 'https://image.tmdb.org/t/p/w500/iiZZdoQBEYBv6id8su7ImL0oCbD.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/1ntePsIqeklfmrQJqZPncCydsqY.jpg',
+    posterTheme: 'anime',
+    score: '8.4',
+    voteCount: 15500,
+    year: '2018',
+    releaseDate: '2018-12-06',
+    runtime: 117,
+    seasons: null,
+    episodes: null,
+    genreIds: [16, 28, 12, 10751],
+    genres: ['Animation', 'Action', 'Adventure', 'Family'],
+    language: 'en',
+    country: 'US',
+    popularity: 960,
+    contentRating: 'PG',
+    youtubeTrailerKey: 'g4Hbz2jLxvQ',
+    directors: [],
+    cast: [{ id: 587506, name: 'Shameik Moore', character: 'Miles Morales (voice)' }],
+  },
+  {
+    id: 1011985,
+    mediaType: 'movie',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U',
+    imdbId: 'tt21692408',
+    title: 'Kung Fu Panda 4',
+    logo: 'https://image.tmdb.org/t/p/w500/QeAYsp12oO1o9vc1CTBDxxKgJk.png',
+    overview:
+      'Po is gearing up to become the spiritual leader of his Valley of Peace, but also needs someone to take his place as Dragon Warrior.',
+    poster: 'https://image.tmdb.org/t/p/w500/kDp1vUBnMpe8ak4rjgl3cLELqjU.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/3ffPx9jqg0yj9y1KWeagT7D20CB.jpg',
+    posterTheme: 'anime',
+    score: '7.0',
+    voteCount: 2800,
+    year: '2024',
+    releaseDate: '2024-03-02',
+    runtime: 94,
+    seasons: null,
+    episodes: null,
+    genreIds: [16, 35, 12, 10751],
+    genres: ['Animation', 'Comedy', 'Adventure', 'Family'],
+    language: 'en',
+    country: 'US',
+    popularity: 940,
+    contentRating: 'PG',
+    youtubeTrailerKey: '_inKs4eeHiI',
+    directors: [],
+    cast: [{ id: 70851, name: 'Jack Black', character: 'Po (voice)' }],
+  },
+  {
+    id: 502356,
+    mediaType: 'movie',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U',
+    imdbId: 'tt6718170',
+    title: 'The Super Mario Bros. Movie',
+    logo: 'https://image.tmdb.org/t/p/w500/sst2kO7ySyAm3z5haWXUszOVWi2.png',
+    overview:
+      'While working underground to fix a water main, Brooklyn plumbers Mario and brother Luigi are transported down a mysterious pipe into a magical new world.',
+    poster: 'https://image.tmdb.org/t/p/w500/qNBAXBIQlnOThrVvA6mA2B5ggV6.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/9n2tJBplPbgR2ca05hS5CKXwP2c.jpg',
+    posterTheme: 'anime',
+    score: '7.6',
+    voteCount: 9100,
+    year: '2023',
+    releaseDate: '2023-04-05',
+    runtime: 93,
+    seasons: null,
+    episodes: null,
+    genreIds: [16, 10751, 35, 12, 14],
+    genres: ['Family', 'Comedy', 'Adventure', 'Fantasy', 'Animation'],
+    language: 'en',
+    country: 'US',
+    popularity: 925,
+    contentRating: 'PG',
+    youtubeTrailerKey: 'TnGl01FkMMo',
+    directors: [],
+    cast: [{ id: 73457, name: 'Chris Pratt', character: 'Mario (voice)' }],
+  },
+  {
+    id: 354912,
+    mediaType: 'movie',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U',
+    imdbId: 'tt2380307',
+    title: 'Coco',
+    logo: 'https://image.tmdb.org/t/p/w500/pLlaM6lXpKbwVCUdsqJ7axwb5UF.png',
+    overview:
+      'Despite his family’s baffling generations-old ban on music, Miguel dreams of becoming an accomplished musician like his idol Ernesto de la Cruz.',
+    poster: 'https://image.tmdb.org/t/p/w500/6Ryitt95xrO8KXuqRGm1fUuNwqF.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/g7CHF8gTLGooTbP4GznIGwaqAGL.jpg',
+    posterTheme: 'anime',
+    score: '8.2',
+    voteCount: 19400,
+    year: '2017',
+    releaseDate: '2017-10-27',
+    runtime: 105,
+    seasons: null,
+    episodes: null,
+    genreIds: [10751, 16, 10402, 12],
+    genres: ['Family', 'Animation', 'Music', 'Adventure'],
+    language: 'en',
+    country: 'US',
+    popularity: 910,
+    contentRating: 'PG',
+    youtubeTrailerKey: 'Ga6RYejo6Hk',
+    directors: [],
+    cast: [],
+  },
+  {
+    id: 315162,
+    mediaType: 'movie',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U',
+    imdbId: 'tt3915174',
+    title: 'Puss in Boots: The Last Wish',
+    logo: 'https://image.tmdb.org/t/p/w500/j6x6l51OWbqN5Vsc7o6fLoqaHJR.png',
+    overview:
+      'Puss in Boots discovers that his passion for adventure has taken its toll: he has burned through eight of his nine lives, and sets out on an epic journey.',
+    poster: 'https://image.tmdb.org/t/p/w500/kuf6dutpsT0vSVehic3EZIqkOBt.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/jr8tSoJGj33XLgFBy6lmZhpGQNu.jpg',
+    posterTheme: 'anime',
+    score: '8.2',
+    voteCount: 7800,
+    year: '2022',
+    releaseDate: '2022-12-07',
+    runtime: 103,
+    seasons: null,
+    episodes: null,
+    genreIds: [16, 12, 14, 35, 10751],
+    genres: ['Animation', 'Adventure', 'Fantasy', 'Comedy', 'Family'],
+    language: 'en',
+    country: 'US',
+    popularity: 905,
+    contentRating: 'PG',
+    youtubeTrailerKey: 'RqrXhwS33yc',
+    directors: [],
+    cast: [{ id: 3131, name: 'Antonio Banderas', character: 'Puss in Boots (voice)' }],
+  },
+  {
+    id: 519182,
+    mediaType: 'movie',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U',
+    imdbId: 'tt7510222',
+    title: 'Despicable Me 4',
+    logo: 'https://image.tmdb.org/t/p/w500/89h1vVNsvFejMxhbrxPO9raMnbl.png',
+    overview:
+      'Gru and Lucy and their girls welcome a new member to the Gru family, Gru Jr., who is intent on tormenting his dad while a new nemesis strikes.',
+    poster: 'https://image.tmdb.org/t/p/w500/wWba3TaojhK7NdycRhoQpsG0FaH.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/twsxsfao6ZOVvT8LfudH603MMi6.jpg',
+    posterTheme: 'anime',
+    score: '6.9',
+    voteCount: 2400,
+    year: '2024',
+    releaseDate: '2024-06-20',
+    runtime: 94,
+    seasons: null,
+    episodes: null,
+    genreIds: [16, 35, 10751],
+    genres: ['Animation', 'Comedy', 'Family'],
+    language: 'en',
+    country: 'US',
+    popularity: 895,
+    contentRating: 'PG',
+    youtubeTrailerKey: 'qQlr9-rF32A',
+    directors: [],
+    cast: [{ id: 4495, name: 'Steve Carell', character: 'Gru (voice)' }],
+  },
+  {
+    id: 277834,
+    mediaType: 'movie',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U',
+    imdbId: 'tt3521164',
+    title: 'Moana',
+    logo: 'https://image.tmdb.org/t/p/w500/oexzU1HUcq6Bzza4KMeU4MbzGza.png',
+    overview:
+      'In Ancient Polynesia, when a terrible curse incurred by Maui reaches an impetuous Chieftain’s daughter’s island, she answers the Ocean’s call.',
+    poster: 'https://image.tmdb.org/t/p/w500/m5MDZOIFEFlxGiLuAzWzFSsWcye.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/qLVNZFHYUR6Li64He67SWl6BHQe.jpg',
+    posterTheme: 'anime',
+    score: '7.6',
+    voteCount: 12600,
+    year: '2016',
+    releaseDate: '2016-10-13',
+    runtime: 107,
+    seasons: null,
+    episodes: null,
+    genreIds: [12, 35, 10751, 16],
+    genres: ['Adventure', 'Comedy', 'Family', 'Animation'],
+    language: 'en',
+    country: 'US',
+    popularity: 885,
+    contentRating: 'PG',
+    youtubeTrailerKey: 'LKFuXETZUsI',
+    directors: [],
+    cast: [],
+  },
+  {
+    id: 109445,
+    mediaType: 'movie',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U',
+    imdbId: 'tt2294629',
+    title: 'Frozen',
+    logo: 'https://image.tmdb.org/t/p/w500/r05nI8WQvBbdvuwVXtXuvOi0cJ9.png',
+    overview:
+      'Young princess Anna of Arendelle dreams about finding true love while her sister Elsa accidentally sets off an eternal winter.',
+    poster: 'https://image.tmdb.org/t/p/w500/itAKcobTYGpYT8Phwjd8c9hleTo.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/rj58WQ9ImI0mYDptXdM7euX1Wjt.jpg',
+    posterTheme: 'anime',
+    score: '7.2',
+    voteCount: 16400,
+    year: '2013',
+    releaseDate: '2013-11-20',
+    runtime: 102,
+    seasons: null,
+    episodes: null,
+    genreIds: [16, 10751, 12, 14],
+    genres: ['Animation', 'Family', 'Adventure', 'Fantasy'],
+    language: 'en',
+    country: 'US',
+    popularity: 880,
+    contentRating: 'PG',
+    youtubeTrailerKey: 'TbQm5doF_Uc',
+    directors: [],
+    cast: [],
+  },
+  {
+    id: 862,
+    mediaType: 'movie',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U',
+    imdbId: 'tt0114709',
+    title: 'Toy Story',
+    logo: 'https://image.tmdb.org/t/p/w500/eX8LcW1zdjxvWNB5ZsZuhPO7NtP.png',
+    overview:
+      'Led by Woody, Andy’s toys live happily in his room until Andy’s birthday brings Buzz Lightyear onto the scene.',
+    poster: 'https://image.tmdb.org/t/p/w500/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/8AqWECiUHnz1Crj69uB9vhiK9Le.jpg',
+    posterTheme: 'anime',
+    score: '8.0',
+    voteCount: 18400,
+    year: '1995',
+    releaseDate: '1995-11-22',
+    runtime: 81,
+    seasons: null,
+    episodes: null,
+    genreIds: [10751, 35, 16, 12],
+    genres: ['Family', 'Comedy', 'Animation', 'Adventure'],
+    language: 'en',
+    country: 'US',
+    popularity: 875,
+    contentRating: 'G',
+    youtubeTrailerKey: 'v-PjgYDrg70',
+    directors: [],
+    cast: [],
+  },
+  {
+    id: 12,
+    mediaType: 'movie',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U',
+    imdbId: 'tt0266543',
+    title: 'Finding Nemo',
+    logo: 'https://image.tmdb.org/t/p/w500/gRweHvOoM7hKg3q8iExsXzAhsBv.png',
+    overview:
+      'Nemo, an adventurous young clownfish, is unexpectedly taken from his Great Barrier Reef home, sparking a massive ocean rescue.',
+    poster: 'https://image.tmdb.org/t/p/w500/eHuGQ10FUzK1mdOY69wF5pGgEf5.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/eCynaAOgYYiw5yN5lBwz3IxqvaW.jpg',
+    posterTheme: 'anime',
+    score: '7.8',
+    voteCount: 19200,
+    year: '2003',
+    releaseDate: '2003-05-30',
+    runtime: 100,
+    seasons: null,
+    episodes: null,
+    genreIds: [16, 10751, 12],
+    genres: ['Animation', 'Family', 'Adventure'],
+    language: 'en',
+    country: 'US',
+    popularity: 870,
+    contentRating: 'G',
+    youtubeTrailerKey: 'wZdpNglLbt8',
+    directors: [],
+    cast: [],
+  },
+  {
+    id: 8587,
+    mediaType: 'movie',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U',
+    imdbId: 'tt0110357',
+    title: 'The Lion King',
+    logo: 'https://image.tmdb.org/t/p/w500/4ldICpAouQAhuT4z3A6tXYMR4Kz.png',
+    overview:
+      'Young lion prince Simba flees his kingdom after the murder of his father, only to learn the true meaning of responsibility and bravery.',
+    poster: 'https://image.tmdb.org/t/p/w500/sKCr78MXSLixwmZ8DyJLrpMsd15.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/wXsQvli6tWqja51pYxXNG1LFIGV.jpg',
+    posterTheme: 'anime',
+    score: '8.3',
+    voteCount: 18300,
+    year: '1994',
+    releaseDate: '1994-06-15',
+    runtime: 89,
+    seasons: null,
+    episodes: null,
+    genreIds: [16, 10751, 18],
+    genres: ['Animation', 'Family', 'Drama'],
+    language: 'en',
+    country: 'US',
+    popularity: 865,
+    contentRating: 'G',
+    youtubeTrailerKey: 'lFzVJEksoDY',
+    directors: [],
+    cast: [],
+  },
+  // Kids Cartoons & Animated Series
+  {
+    id: 246,
+    mediaType: 'tv',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U/A 7+',
+    imdbId: 'tt0417299',
+    title: 'Avatar: The Last Airbender',
+    logo: 'https://image.tmdb.org/t/p/w500/l0zXgxqmIgaHNp1xFAJ6XzCcdD3.png',
+    overview:
+      'In a war-torn world of elemental magic, a young boy reawakens to undertake a dangerous mystic quest to fulfill his destiny as the Avatar.',
+    poster: 'https://image.tmdb.org/t/p/w500/yaGt4GIutpbXHsv48tWceWg6s56.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/7oBGhqJIghRBvOwo5Qe0yM0cnMc.jpg',
+    posterTheme: 'anime',
+    score: '8.8',
+    voteCount: 4100,
+    year: '2005',
+    releaseDate: '2005-02-21',
+    runtime: 24,
+    seasons: 3,
+    episodes: 61,
+    genreIds: [16, 10759, 10765, 10762],
+    genres: ['Animation', 'Action & Adventure', 'Kids'],
+    language: 'en',
+    country: 'US',
+    popularity: 950,
+    contentRating: 'TV-Y7',
+    directors: [],
+    cast: [],
+  },
+  {
+    id: 82728,
+    mediaType: 'tv',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U',
+    imdbId: 'tt7678620',
+    title: 'Bluey',
+    logo: 'https://image.tmdb.org/t/p/w500/uFYNVaPt6dz1PH6tZ4vfdyOnKS.png',
+    overview:
+      'Bluey is an inexhaustible six-year-old Blue Heeler dog who turns everyday family life into extraordinary adventures.',
+    poster: 'https://image.tmdb.org/t/p/w500/9p4pNoGcuyCfHcGWKNrTopqMWtq.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/tWdNZ3xuFBhJ2ZoQ9vShNGHTb85.jpg',
+    posterTheme: 'anime',
+    score: '8.6',
+    voteCount: 650,
+    year: '2018',
+    releaseDate: '2018-10-01',
+    runtime: 7,
+    seasons: 4,
+    episodes: 153,
+    genreIds: [16, 35, 10751, 10762],
+    genres: ['Animation', 'Comedy', 'Family', 'Kids'],
+    language: 'en',
+    country: 'AU',
+    popularity: 935,
+    contentRating: 'TV-Y',
+    directors: [],
+    cast: [],
+  },
+  {
+    id: 387,
+    mediaType: 'tv',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U',
+    imdbId: 'tt0206512',
+    title: 'SpongeBob SquarePants',
+    logo: 'https://image.tmdb.org/t/p/w500/imM7dqtVl070IIKyOqzOHmHFXqq.png',
+    overview:
+      'Deep down in Bikini Bottom lives a square yellow sponge named SpongeBob SquarePants, cooking Krabby Patties and going on wild adventures with Patrick.',
+    poster: 'https://image.tmdb.org/t/p/w500/5h0EU2lqBb03dp5vtRuUHJwqzem.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/f3f5OzzYd8m3zN47DAjKs0sbx00.jpg',
+    posterTheme: 'anime',
+    score: '7.7',
+    voteCount: 3000,
+    year: '1999',
+    releaseDate: '1999-05-01',
+    runtime: 22,
+    seasons: 18,
+    episodes: 661,
+    genreIds: [16, 35, 10751, 10762],
+    genres: ['Animation', 'Comedy', 'Family', 'Kids'],
+    language: 'en',
+    country: 'US',
+    popularity: 920,
+    contentRating: 'TV-Y7',
+    directors: [],
+    cast: [
+      {
+        id: 78798,
+        name: 'Tom Kenny',
+        character: 'SpongeBob (voice)',
+        profile: 'https://image.tmdb.org/t/p/w185/kftXtExrcoTTjyeYmSXJ0Ogr3R7.jpg',
+      },
+    ],
+  },
+  {
+    id: 60572,
+    mediaType: 'tv',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U',
+    imdbId: 'tt0168366',
+    title: 'Pokémon',
+    logo: 'https://image.tmdb.org/t/p/w500/xvERvRImZQOj83WPj1y3nxPxMDv.png',
+    overview:
+      'Join Ash accompanied by his partner Pikachu as he travels through many regions, meets new friends, and faces challenges to become a Pokémon Master.',
+    poster: 'https://image.tmdb.org/t/p/w500/lP4zwr0F7hWTbAFltfoFTc2AxRG.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/yYpQV25I7XB6S0POJOScPjxYWV5.jpg',
+    posterTheme: 'anime',
+    score: '8.0',
+    voteCount: 2100,
+    year: '1997',
+    releaseDate: '1997-04-01',
+    runtime: 24,
+    seasons: 25,
+    episodes: 1235,
+    genreIds: [16, 10759, 10765, 10762],
+    genres: ['Animation', 'Action & Adventure', 'Kids'],
+    language: 'ja',
+    country: 'JP',
+    popularity: 915,
+    contentRating: 'TV-Y7',
+    directors: [],
+    cast: [],
+  },
+  {
+    id: 65334,
+    mediaType: 'tv',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U/A 7+',
+    imdbId: 'tt2580046',
+    title: 'Miraculous: Tales of Ladybug & Cat Noir',
+    logo: 'https://image.tmdb.org/t/p/w500/drjzvXJirGntkYGRefs2pOapFCM.png',
+    overview:
+      'Marinette and Adrien, two Parisian teenagers, transform into superheroes Ladybug and Cat Noir to protect Paris from villains.',
+    poster: 'https://image.tmdb.org/t/p/w500/acrtAy8gmxcsEvrDP09MpMSCeDZ.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/lH22EnM0ofC7GsVGU8dAA2RXV1c.jpg',
+    posterTheme: 'anime',
+    score: '8.1',
+    voteCount: 4400,
+    year: '2015',
+    releaseDate: '2015-10-19',
+    runtime: 22,
+    seasons: 7,
+    episodes: 181,
+    genreIds: [10759, 16, 10762],
+    genres: ['Action & Adventure', 'Animation', 'Kids'],
+    language: 'fr',
+    country: 'FR',
+    popularity: 900,
+    contentRating: 'TV-Y7',
+    directors: [],
+    cast: [],
+  },
+  {
+    id: 40075,
+    mediaType: 'tv',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U/A 7+',
+    imdbId: 'tt1865718',
+    title: 'Gravity Falls',
+    logo: 'https://image.tmdb.org/t/p/w500/WuxO4bgZiarsf7v54Yz7AOptXH.png',
+    overview:
+      'Twin brother and sister Dipper and Mabel Pines spend the summer helping their great uncle Stan run a tourist trap in mysterious Gravity Falls.',
+    poster: 'https://image.tmdb.org/t/p/w500/qwi3p6PzKfQZ4YXBzv3CP5pO2dE.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/l0XvAI856XdyDYEfr1njztjH7u0.jpg',
+    posterTheme: 'anime',
+    score: '8.6',
+    voteCount: 2900,
+    year: '2012',
+    releaseDate: '2012-06-15',
+    runtime: 23,
+    seasons: 2,
+    episodes: 40,
+    genreIds: [16, 10759, 35, 10751, 10762],
+    genres: ['Animation', 'Comedy', 'Family', 'Kids'],
+    language: 'en',
+    country: 'US',
+    popularity: 890,
+    contentRating: 'TV-Y7',
+    directors: [],
+    cast: [],
+  },
+  {
+    id: 15260,
+    mediaType: 'tv',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U/A 7+',
+    imdbId: 'tt1305826',
+    title: 'Adventure Time',
+    logo: 'https://image.tmdb.org/t/p/w500/rIi0lY2UftYuKDJ4OlIefDdijve.png',
+    overview:
+      'Young Finn and his shape-shifting dog buddy Jake go on wild surreal adventures across the magical Land of Ooo.',
+    poster: 'https://image.tmdb.org/t/p/w500/qk3eQ8jW4opJ48gFWYUXWaMT4l.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/d8rse1RgMzXwmZvBpDvcG1VUO2Y.jpg',
+    posterTheme: 'anime',
+    score: '8.5',
+    voteCount: 2800,
+    year: '2010',
+    releaseDate: '2010-04-05',
+    runtime: 11,
+    seasons: 10,
+    episodes: 279,
+    genreIds: [16, 35, 10765, 10762],
+    genres: ['Animation', 'Comedy', 'Kids'],
+    language: 'en',
+    country: 'US',
+    popularity: 880,
+    contentRating: 'TV-PG',
+    directors: [],
+    cast: [],
+  },
+  {
+    id: 4686,
+    mediaType: 'tv',
+    category: 'kids',
+    isKids: true,
+    maturityRating: 'U/A 7+',
+    imdbId: 'tt0760437',
+    title: 'Ben 10',
+    logo: 'https://image.tmdb.org/t/p/w500/rxbiE1hQO87uoR3IS9viS2KivDL.svg',
+    overview:
+      'When 10-year-old Ben Tennyson discovers a mysterious watch, he gains the power to transform into ten different alien heroes.',
+    poster: 'https://image.tmdb.org/t/p/w500/eogRp6oAPK0SEvQmCrQ78LTlSdp.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/original/v5hLUEpbn3G3oLXLdF7lFikDivb.jpg',
+    posterTheme: 'anime',
+    score: '8.1',
+    voteCount: 1650,
+    year: '2005',
+    releaseDate: '2005-12-27',
+    runtime: 22,
+    seasons: 4,
+    episodes: 52,
+    genreIds: [16, 10765, 10759, 35, 10762],
+    genres: ['Animation', 'Action & Adventure', 'Comedy', 'Kids'],
+    language: 'en',
+    country: 'US',
+    popularity: 875,
+    contentRating: 'TV-Y7',
+    directors: [],
+    cast: [],
+  },
 ];
+
+const BASE_SEEDS_MAP = new Map<string, VaultSeed>();
+for (const seed of VAULT_SEEDS) {
+  BASE_SEEDS_MAP.set(`${seed.mediaType}:${seed.id}`, seed);
+}
+for (const extra of EXTRA_PLATFORM_SEEDS) {
+  const k = `${extra.mediaType}:${extra.id}`;
+  if (!BASE_SEEDS_MAP.has(k)) {
+    BASE_SEEDS_MAP.set(k, extra);
+  }
+}
+const ALL_COMBINED_SEEDS: VaultSeed[] = Array.from(BASE_SEEDS_MAP.values());
 
 function stripToSummary(seed: VaultSeed): MediaSummary {
   const {
@@ -1386,50 +2021,200 @@ export function buildDefaultSeasons(seed: VaultSeed): SeasonDetail[] {
 }
 
 export function getAllVaultItems(): MediaSummary[] {
-  return VAULT_SEEDS.map(stripToSummary);
+  return ALL_COMBINED_SEEDS.map(stripToSummary);
 }
 
-export function getHeroVaultItems(): MediaSummary[] {
-  return [
-    VAULT_SEEDS[0], // Dune: Part Two
-    VAULT_SEEDS[6], // Jawan
-    VAULT_SEEDS[1], // Interstellar
-    VAULT_SEEDS[25], // Arcane
-    VAULT_SEEDS[28], // Breaking Bad
-    VAULT_SEEDS[4], // Oppenheimer
-  ]
-    .filter(Boolean)
+// Titles exclusive to Netflix vs Prime Video vs Crunchyroll Anime
+export const NETFLIX_EXCLUSIVE_IDS = new Set([
+  66732,  // Stranger Things
+  94605,  // Arcane
+  79352,  // Sacred Games
+  89113,  // Kota Factory
+  93405,  // Squid Game
+  71446,  // Money Heist
+  119051, // Wednesday
+  70523,  // Dark
+  545609, // Extraction
+  512195, // Red Notice
+  661374, // Glass Onion
+  725201, // The Gray Man
+  1396,   // Breaking Bad (Netflix US/IN classic)
+]);
+
+export const PRIME_EXCLUSIVE_IDS = new Set([
+  84105,  // Mirzapur
+  93352,  // The Family Man
+  101352, // Panchayat
+  132117, // Farzi
+  103051, // Paatal Lok
+  124411, // Aspirants
+  76479,  // The Boys
+  106379, // Fallout
+  108978, // Reacher
+  95557,  // Invincible
+  84773,  // LOTR: Rings of Power
+  73375,  // Jack Ryan
+  588228, // The Tomorrow War
+  937278, // A Man Called Otto
+]);
+
+export const CRUNCHYROLL_ANIME_IDS = new Set([
+  127532, // Solo Leveling
+  1429,   // Attack on Titan
+  85937,  // Demon Slayer
+  95479,  // Jujutsu Kaisen
+  37854,  // One Piece
+  114410, // Chainsaw Man
+  31910,  // Naruto Shippuden
+  120089, // Spy x Family
+  13916,  // Death Note
+  31911,  // Fullmetal Alchemist: Brotherhood
+  88803,  // Vinland Saga
+  209867, // Frieren: Beyond Journey's End
+  207468, // Kaiju No. 8
+  65930,  // My Hero Academia
+  46298,  // Hunter x Hunter
+  372058, // Your Name.
+  129,    // Spirited Away
+  810693, // Jujutsu Kaisen 0
+  635302, // Demon Slayer: Mugen Train
+  916224, // Suzume
+  60572,  // Pokemon
+  60574,  // JoJo
+]);
+
+export function isAnimeMedia(item: MediaSummary): boolean {
+  if (!item) return false;
+  if (CRUNCHYROLL_ANIME_IDS.has(item.id)) return true;
+  if (item.category === 'anime') return true;
+  if (item.isKids && item.language !== 'ja') return false;
+  const hasAnim =
+    (item.genreIds || []).includes(16) ||
+    (item.genres || []).some((g) => g.toLowerCase().includes('animation'));
+  return Boolean(hasAnim && (item.language === 'ja' || item.country === 'JP'));
+}
+
+const BLOCKED_KIDS_IDS = new Set([
+  1396, 94605, 127532, 1429, 95479, 105248, 87108, 100088, 66732, 95396, 126308,
+  84105, 79352, 93352, 111188, 132117, 103051, 100911, 872906, 864692, 781732,
+  538858, 155, 872585, 496243, 414906, 603692, 530385, 807, 550, 76341, 278, 238,
+  93405, 71446, 119051, 70523, 545609, 512195, 661374, 725201,
+  76479, 106379, 108978, 95557, 84773, 73375, 588228,
+]);
+
+const KNOWN_KIDS_IDS = new Set([
+  1022789, 324857, 1011985, 862, 12, 8587, 354912, 109445, 519182, 277834, 502356, 315162,
+  569094, 246, 387, 60572, 65334, 40075, 15260, 82728, 4686, 150540, 14160, 9806, 260513,
+  10681, 8587, 10193, 301528, 49444, 140300, 38055, 10191, 82690, 269149, 508442, 420818,
+]);
+
+const UNSAFE_KIDS_GENRE_IDS = new Set([27, 80, 53, 10752]); // Horror, Crime, Thriller, War
+
+export function isKidsSafeMedia(item: MediaSummary): boolean {
+  if (!item) return false;
+  if (item.isKids) return true;
+  if (BLOCKED_KIDS_IDS.has(item.id)) return false;
+  if (KNOWN_KIDS_IDS.has(item.id)) return true;
+
+  const rating = String(item.maturityRating || '').toUpperCase();
+  if (rating.includes('TV-MA') || rating === 'R' || rating === 'A' || rating.includes('18+')) {
+    return false;
+  }
+
+  const lowerGenres = (item.genres || []).map((g) => g.toLowerCase());
+  if (lowerGenres.some((g) => g.includes('horror') || g.includes('crime') || g.includes('thriller') || g.includes('war'))) {
+    return false;
+  }
+  if ((item.genreIds || []).some((gid) => UNSAFE_KIDS_GENRE_IDS.has(gid))) {
+    return false;
+  }
+
+  const hasKidsGenre =
+    (item.genreIds || []).some((gid) => gid === 16 || gid === 10751 || gid === 10762) ||
+    lowerGenres.some((g) => g.includes('animation') || g.includes('family') || g.includes('kids'));
+
+  return hasKidsGenre;
+}
+
+export function isAllowedOnPlatform(
+  item: MediaSummary,
+  platform: StreamingPlatform = 'netflix',
+  kidsOnly = false,
+): boolean {
+  if (!item) return false;
+  if (kidsOnly && platform === 'netflix') {
+    return isKidsSafeMedia(item);
+  }
+  if (platform === 'crunchyroll') {
+    return isAnimeMedia(item);
+  }
+  if (platform === 'netflix') {
+    if (PRIME_EXCLUSIVE_IDS.has(item.id) || item.exclusiveOn === 'prime') return false;
+    return true;
+  }
+  if (platform === 'prime') {
+    if (NETFLIX_EXCLUSIVE_IDS.has(item.id) || item.exclusiveOn === 'netflix') return false;
+    return true;
+  }
+  return true;
+}
+
+export function getHeroVaultItems(
+  kidsOnly = false,
+  platform: StreamingPlatform = 'netflix',
+): MediaSummary[] {
+  if (platform === 'crunchyroll') {
+    return [127532, 1429, 85937, 95479, 209867, 114410]
+      .map((id) => ALL_COMBINED_SEEDS.find((s) => s.id === id))
+      .filter((s): s is VaultSeed => Boolean(s))
+      .map(stripToSummary);
+  }
+  if (platform === 'prime') {
+    return [76479, 106379, 84105, 93352, 108978, 693134]
+      .map((id) => ALL_COMBINED_SEEDS.find((s) => s.id === id))
+      .filter((s): s is VaultSeed => Boolean(s))
+      .map(stripToSummary);
+  }
+  if (kidsOnly) {
+    return ALL_COMBINED_SEEDS.filter((item) => item.isKids)
+      .slice(0, 6)
+      .map(stripToSummary);
+  }
+  return [66732, 93405, 872906, 693134, 94605, 157336]
+    .map((id) => ALL_COMBINED_SEEDS.find((s) => s.id === id))
+    .filter((s): s is VaultSeed => Boolean(s))
     .map(stripToSummary);
 }
 
 export function getVaultDetail(id: number, mediaType?: MediaType): MediaDetail | null {
   const found =
-    VAULT_SEEDS.find((item) => item.id === id && (!mediaType || item.mediaType === mediaType)) ||
-    VAULT_SEEDS.find((item) => item.id === id);
+    ALL_COMBINED_SEEDS.find((item) => item.id === id && (!mediaType || item.mediaType === mediaType)) ||
+    ALL_COMBINED_SEEDS.find((item) => item.id === id);
   if (!found) return null;
 
   const { collection: col, youtubeTrailerKey, ...rest } = found;
-  const recommendations = VAULT_SEEDS.filter(
+  const recommendations = ALL_COMBINED_SEEDS.filter(
     (other) =>
       other.id !== found.id &&
+      (found.isKids ? Boolean(other.isKids) : true) &&
       (other.mediaType === found.mediaType ||
         other.genreIds.some((g) => found.genreIds.includes(g))),
   )
-    .slice(0, 10)
+    .slice(0, 12)
     .map(stripToSummary);
 
   return {
     ...rest,
+    recommendations,
+    seasonsDetail: buildDefaultSeasons(found),
     trailerEmbedUrl: youtubeTrailerKey
       ? `https://www.youtube.com/embed/${youtubeTrailerKey}?autoplay=1&rel=0`
       : undefined,
-    recommendations,
-    seasonsDetail: buildDefaultSeasons(found),
     collection: col
       ? {
           id: col.id,
           name: col.name,
-          parts: VAULT_SEEDS.filter((p) => col.partIds.includes(p.id)).map(stripToSummary),
+          parts: ALL_COMBINED_SEEDS.filter((p) => col.partIds.includes(p.id)).map(stripToSummary),
         }
       : undefined,
   };
@@ -1443,6 +2228,9 @@ export function queryVaultDiscover(params: URLSearchParams): {
 } {
   const media = params.get('media');
   const categoryType = params.get('type');
+  const platformParam = (params.get('platform') || 'netflix') as StreamingPlatform;
+  const curatedSlug = params.get('curatedSlug') || '';
+  const kidsOnly = params.get('kids') === '1' || categoryType === 'kids';
   const withGenres = (params.get('with_genres') || params.get('genres') || '')
     .split(/[,|]/)
     .map((s) => Number(s.trim()))
@@ -1466,8 +2254,28 @@ export function queryVaultDiscover(params: URLSearchParams): {
   const sortBy = params.get('sort_by') || 'popularity.desc';
   const page = Math.max(1, Number(params.get('page') || 1));
 
-  let items = VAULT_SEEDS.filter((item) => {
-    if (categoryType === 'anime') {
+  let items = ALL_COMBINED_SEEDS.filter((item) => {
+    if (!isAllowedOnPlatform(item, platformParam, kidsOnly)) return false;
+
+    if (curatedSlug === 'netflix-exclusives') {
+      return NETFLIX_EXCLUSIVE_IDS.has(item.id) || item.exclusiveOn === 'netflix';
+    }
+    if (curatedSlug === 'prime-originals' || curatedSlug === 'prime-top-series') {
+      return (PRIME_EXCLUSIVE_IDS.has(item.id) || item.exclusiveOn === 'prime') && (curatedSlug !== 'prime-top-series' || item.mediaType === 'tv');
+    }
+    if (curatedSlug === 'prime-hindi-thrillers') {
+      return item.language === 'hi' && item.mediaType === 'tv' && !NETFLIX_EXCLUSIVE_IDS.has(item.id);
+    }
+
+    if (kidsOnly) {
+      if (!isKidsSafeMedia(item)) return false;
+      if ((media === 'movie' || media === 'tv') && item.mediaType !== media) return false;
+    } else if (platformParam === 'crunchyroll') {
+      if (!isAnimeMedia(item)) return false;
+      if ((media === 'movie' || media === 'tv') && categoryType !== 'all' && item.mediaType !== media) return false;
+    } else if (categoryType === 'all') {
+      // Allow all movies & shows for this platform
+    } else if (categoryType === 'anime') {
       if (item.category !== 'anime' && !item.genreIds.includes(16)) return false;
     } else if (categoryType === 'hindi') {
       if (item.language !== 'hi' && item.country !== 'IN') return false;
@@ -1505,7 +2313,7 @@ export function queryVaultDiscover(params: URLSearchParams): {
   });
 
   if (items.length === 0 && !params.get('genres') && !params.get('yearMin') && !params.get('ratingMin')) {
-    items = VAULT_SEEDS.filter((item) => (media === 'tv' ? item.mediaType === 'tv' : item.mediaType === 'movie'));
+    items = ALL_COMBINED_SEEDS.filter((item) => isAllowedOnPlatform(item, platformParam, kidsOnly));
   }
 
   items = [...items].sort((a, b) => {
@@ -1517,7 +2325,7 @@ export function queryVaultDiscover(params: URLSearchParams): {
     return b.popularity - a.popularity;
   });
 
-  const pageSize = 20;
+  const pageSize = 24;
   const start = (page - 1) * pageSize;
   const sliced = items.slice(start, start + pageSize).map(stripToSummary);
 
@@ -1529,22 +2337,29 @@ export function queryVaultDiscover(params: URLSearchParams): {
   };
 }
 
-export function searchVaultCatalog(query: string): {
+export function searchVaultCatalog(
+  query: string,
+  kidsOnly = false,
+  platform: StreamingPlatform = 'netflix',
+): {
   results: MediaSummary[];
   people: PersonResult[];
 } {
   const q = query.trim().toLowerCase();
   if (!q) return { results: [], people: [] };
 
-  const results = VAULT_SEEDS.filter(
-    (item) =>
-      item.title.toLowerCase().includes(q) ||
-      item.overview.toLowerCase().includes(q) ||
-      item.genres.some((g) => g.toLowerCase().includes(q)) ||
-      item.directors.some((d) => d.name.toLowerCase().includes(q)) ||
-      item.cast.some((c) => c.name.toLowerCase().includes(q)) ||
-      item.year.includes(q),
-  )
+  const pool = ALL_COMBINED_SEEDS.filter((item) => isAllowedOnPlatform(item, platform, kidsOnly));
+
+  const results = pool
+    .filter(
+      (item) =>
+        item.title.toLowerCase().includes(q) ||
+        item.overview.toLowerCase().includes(q) ||
+        item.genres.some((g) => g.toLowerCase().includes(q)) ||
+        item.directors.some((d) => d.name.toLowerCase().includes(q)) ||
+        item.cast.some((c) => c.name.toLowerCase().includes(q)) ||
+        item.year.includes(q),
+    )
     .sort((a, b) => {
       const aExact = a.title.toLowerCase().startsWith(q) ? 1 : 0;
       const bExact = b.title.toLowerCase().startsWith(q) ? 1 : 0;
@@ -1554,29 +2369,31 @@ export function searchVaultCatalog(query: string): {
     .map(stripToSummary);
 
   const peopleMap = new Map<number, PersonResult>();
-  for (const seed of VAULT_SEEDS) {
-    for (const dir of seed.directors) {
-      if (dir.name.toLowerCase().includes(q) && !peopleMap.has(dir.id)) {
-        peopleMap.set(dir.id, {
-          id: dir.id,
-          name: dir.name,
-          profile: dir.profile || '',
-          popularity: 95,
-          department: 'Directing',
-          knownFor: VAULT_SEEDS.filter((s) => s.directors.some((d) => d.id === dir.id)).map((s) => s.title),
-        });
+  if (!kidsOnly) {
+    for (const seed of pool) {
+      for (const dir of seed.directors) {
+        if (dir.name.toLowerCase().includes(q) && !peopleMap.has(dir.id)) {
+          peopleMap.set(dir.id, {
+            id: dir.id,
+            name: dir.name,
+            profile: dir.profile || '',
+            popularity: 95,
+            department: 'Directing',
+            knownFor: pool.filter((s) => s.directors.some((d) => d.id === dir.id)).map((s) => s.title),
+          });
+        }
       }
-    }
-    for (const actor of seed.cast) {
-      if (actor.name.toLowerCase().includes(q) && !peopleMap.has(actor.id)) {
-        peopleMap.set(actor.id, {
-          id: actor.id,
-          name: actor.name,
-          profile: actor.profile || '',
-          popularity: 88,
-          department: 'Acting',
-          knownFor: VAULT_SEEDS.filter((s) => s.cast.some((c) => c.id === actor.id)).map((s) => s.title),
-        });
+      for (const actor of seed.cast) {
+        if (actor.name.toLowerCase().includes(q) && !peopleMap.has(actor.id)) {
+          peopleMap.set(actor.id, {
+            id: actor.id,
+            name: actor.name,
+            profile: actor.profile || '',
+            popularity: 88,
+            department: 'Acting',
+            knownFor: pool.filter((s) => s.cast.some((c) => c.id === actor.id)).map((s) => s.title),
+          });
+        }
       }
     }
   }
@@ -1590,7 +2407,7 @@ export function getVaultPerson(id: number): PersonResult | null {
   let department = 'Acting';
   let profile = '';
 
-  for (const seed of VAULT_SEEDS) {
+  for (const seed of ALL_COMBINED_SEEDS) {
     const asDir = seed.directors.find((d) => d.id === id);
     const asCast = seed.cast.find((c) => c.id === id);
     if (asDir || asCast) {

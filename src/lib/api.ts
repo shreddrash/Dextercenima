@@ -1,3 +1,4 @@
+import { getPlatformCategories } from '../shared/curatedCategories';
 import {
   buildProviderUrl,
   getPlayerProvider,
@@ -11,16 +12,20 @@ import type {
   PersonResult,
   PlayerProviderId,
   SeasonDetail,
+  StreamingPlatform,
 } from '../shared/types';
 import {
+  getAllVaultItems,
   getHeroVaultItems,
   getVaultDetail,
   getVaultPerson,
+  isAllowedOnPlatform,
   queryVaultDiscover,
   searchVaultCatalog,
 } from '../shared/vaultCatalog';
+import { getActivePlatform, PLATFORM_THEMES } from './platform';
 
-async function fetchApiJson<T>(url: string, timeoutMs = 10000): Promise<T | null> {
+async function fetchApiJson<T>(url: string, timeoutMs = 12000): Promise<T | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -39,47 +44,128 @@ async function fetchApiJson<T>(url: string, timeoutMs = 10000): Promise<T | null
   }
 }
 
-export async function fetchHeroTitles(): Promise<MediaSummary[]> {
-  const data = await fetchApiJson<{ results?: MediaSummary[] }>('/api/tmdb/hero');
-  if (data && Array.isArray(data.results) && data.results.length > 0) {
-    return data.results;
-  }
-  return getHeroVaultItems();
+function enforcePlatformList(
+  items: MediaSummary[],
+  platform: StreamingPlatform,
+  kidsOnly: boolean,
+): MediaSummary[] {
+  return items.filter((item) => isAllowedOnPlatform(item, platform, kidsOnly));
 }
 
-export async function fetchDiscoverTitles(params: URLSearchParams): Promise<{
+export async function fetchHeroTitles(
+  kidsOnly = false,
+  platform: StreamingPlatform = getActivePlatform(),
+): Promise<MediaSummary[]> {
+  const data = await fetchApiJson<{ results?: MediaSummary[] }>(
+    `/api/tmdb/hero?platform=${platform}&kids=${kidsOnly ? '1' : '0'}`,
+  );
+  if (data && Array.isArray(data.results)) {
+    const filtered = enforcePlatformList(data.results, platform, kidsOnly);
+    if (filtered.length > 0) return filtered;
+  }
+  return getHeroVaultItems(kidsOnly, platform);
+}
+
+export async function fetchHomeFeed(
+  kidsOnly = false,
+  platform: StreamingPlatform = getActivePlatform(),
+): Promise<{
+  hero: MediaSummary[];
+  rails: Record<string, MediaSummary[]>;
+  allSeed: MediaSummary[];
+}> {
+  const data = await fetchApiJson<{
+    hero?: MediaSummary[];
+    rails?: Record<string, MediaSummary[]>;
+    allSeed?: MediaSummary[];
+  }>(`/api/tmdb/home-feed?platform=${platform}&kids=${kidsOnly ? '1' : '0'}`, 16000);
+
+  if (data && data.rails && Object.keys(data.rails).length > 0) {
+    const safeRails: Record<string, MediaSummary[]> = {};
+    for (const [slug, list] of Object.entries(data.rails)) {
+      safeRails[slug] = enforcePlatformList(Array.isArray(list) ? list : [], platform, kidsOnly);
+    }
+    const hero = enforcePlatformList(data.hero || [], platform, kidsOnly);
+    const allSeed = enforcePlatformList(data.allSeed || [], platform, kidsOnly);
+    return {
+      hero: hero.length > 0 ? hero : getHeroVaultItems(kidsOnly, platform),
+      rails: safeRails,
+      allSeed:
+        allSeed.length > 0
+          ? allSeed
+          : enforcePlatformList(getAllVaultItems(), platform, kidsOnly),
+    };
+  }
+
+  const { top, curated } = getPlatformCategories(platform, kidsOnly);
+  const cats = [...top, ...curated];
+  const fallbackRails: Record<string, MediaSummary[]> = {};
+  for (const cat of cats) {
+    const qs = new URLSearchParams({
+      media: cat.mediaType,
+      curatedSlug: cat.slug,
+      platform,
+      ...(kidsOnly ? { kids: '1' } : {}),
+      ...cat.query,
+    });
+    fallbackRails[cat.slug] = enforcePlatformList(queryVaultDiscover(qs).list, platform, kidsOnly);
+  }
+
+  return {
+    hero: getHeroVaultItems(kidsOnly, platform),
+    rails: fallbackRails,
+    allSeed: enforcePlatformList(getAllVaultItems(), platform, kidsOnly),
+  };
+}
+
+export async function fetchDiscoverTitles(
+  params: URLSearchParams,
+  kidsOnly = false,
+  platform: StreamingPlatform = getActivePlatform(),
+): Promise<{
   list: MediaSummary[];
   page: number;
   total_pages: number;
   total_results: number;
 }> {
+  const effectiveParams = new URLSearchParams(params);
+  effectiveParams.set('platform', platform);
+  if (kidsOnly && platform === 'netflix') {
+    effectiveParams.set('kids', '1');
+  }
+
   const data = await fetchApiJson<{
     list?: MediaSummary[];
     page?: number;
     total_pages?: number;
     total_results?: number;
-  }>(`/api/tmdb/discover?${params.toString()}`);
+  }>(`/api/tmdb/discover?${effectiveParams.toString()}`);
 
   if (data && Array.isArray(data.list)) {
+    const filteredList = enforcePlatformList(data.list, platform, kidsOnly);
     const hasStrictUserFilters = Boolean(
-      params.get('genres') ||
-        (params.get('ratingMin') && Number(params.get('ratingMin')) > 0) ||
-        (params.get('yearMin') && Number(params.get('yearMin')) > 1995),
+      effectiveParams.get('genres') ||
+        (effectiveParams.get('ratingMin') && Number(effectiveParams.get('ratingMin')) > 0) ||
+        (effectiveParams.get('yearMin') && Number(effectiveParams.get('yearMin')) > 1995),
     );
-    if (data.list.length > 0 || hasStrictUserFilters) {
+    if (filteredList.length > 0 || hasStrictUserFilters) {
       return {
-        list: data.list,
+        list: filteredList,
         page: Number(data.page || 1),
         total_pages: Number(data.total_pages || 1),
-        total_results: Number(data.total_results || data.list.length),
+        total_results: Number(data.total_results || filteredList.length),
       };
     }
   }
 
-  return queryVaultDiscover(params);
+  return queryVaultDiscover(effectiveParams);
 }
 
-export async function fetchSearchTitles(query: string): Promise<{
+export async function fetchSearchTitles(
+  query: string,
+  kidsOnly = false,
+  platform: StreamingPlatform = getActivePlatform(),
+): Promise<{
   results: MediaSummary[];
   people: PersonResult[];
 }> {
@@ -91,12 +177,24 @@ export async function fetchSearchTitles(query: string): Promise<{
   const data = await fetchApiJson<{
     results?: MediaSummary[];
     people?: PersonResult[];
-  }>(`/api/tmdb/search?q=${encodeURIComponent(trimmed)}`);
+  }>(
+    `/api/tmdb/search?q=${encodeURIComponent(trimmed)}&platform=${platform}&kids=${kidsOnly ? '1' : '0'}`,
+  );
 
-  const vault = searchVaultCatalog(trimmed);
+  const vault = searchVaultCatalog(trimmed, kidsOnly, platform);
   if (data && (Array.isArray(data.results) || Array.isArray(data.people))) {
-    const results = Array.isArray(data.results) && data.results.length > 0 ? data.results : vault.results;
-    const people = Array.isArray(data.people) && data.people.length > 0 ? data.people : vault.people;
+    const apiResults = enforcePlatformList(
+      Array.isArray(data.results) ? data.results : [],
+      platform,
+      kidsOnly,
+    );
+    const results = apiResults.length > 0 ? apiResults : vault.results;
+    const people =
+      kidsOnly || platform === 'crunchyroll'
+        ? []
+        : Array.isArray(data.people) && data.people.length > 0
+          ? data.people
+          : vault.people;
     return { results, people };
   }
 
@@ -106,12 +204,26 @@ export async function fetchSearchTitles(query: string): Promise<{
 export async function fetchTitleDetail(
   tmdbId: number,
   mediaType: MediaType,
+  kidsOnly = false,
+  platform: StreamingPlatform = getActivePlatform(),
 ): Promise<MediaDetail | null> {
   const data = await fetchApiJson<{ detail?: MediaDetail }>(
-    `/api/tmdb/detail?tmdbId=${tmdbId}&mediaType=${mediaType}`,
+    `/api/tmdb/detail?tmdbId=${tmdbId}&mediaType=${mediaType}&platform=${platform}&kids=${kidsOnly ? '1' : '0'}`,
   );
-  if (data?.detail) return data.detail;
-  return getVaultDetail(tmdbId, mediaType);
+  if (data?.detail) {
+    return {
+      ...data.detail,
+      recommendations: enforcePlatformList(data.detail.recommendations || [], platform, kidsOnly),
+    };
+  }
+  const vaultDetail = getVaultDetail(tmdbId, mediaType);
+  if (vaultDetail) {
+    return {
+      ...vaultDetail,
+      recommendations: enforcePlatformList(vaultDetail.recommendations || [], platform, kidsOnly),
+    };
+  }
+  return null;
 }
 
 export async function fetchPersonDetail(personId: number): Promise<PersonResult | null> {
@@ -133,13 +245,14 @@ export async function resolvePlayerSession(opts: {
 }> {
   const normalizedType = normalizePlayerMediaType(opts.mediaType);
   const prov = getPlayerProvider(opts.provider);
+  const accentColor = PLATFORM_THEMES[getActivePlatform()].accentHexNoHash;
   const qs = new URLSearchParams({
     tmdbId: String(opts.tmdbId),
     type: normalizedType,
     provider: prov.id,
     season: String(opts.season),
     episode: String(opts.episode),
-    color: '9333ea',
+    color: accentColor,
   });
 
   const data = await fetchApiJson<{
@@ -184,7 +297,7 @@ export async function resolvePlayerSession(opts: {
       tmdbId: opts.tmdbId,
       season: opts.season,
       episode: opts.episode,
-      accentColor: '9333ea',
+      accentColor,
       subtitleLang: 'en',
     }),
     seasonDetail: fallbackSeason,

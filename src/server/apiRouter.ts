@@ -13,12 +13,21 @@ import type {
   MediaType,
   PersonResult,
   SeasonDetail,
+  StreamingPlatform,
 } from '../shared/types';
 import {
+  getPlatformCategories,
+  type CuratedCategoryConfig,
+} from '../shared/curatedCategories';
+import {
   GENRE_MAP,
+  getAllVaultItems,
   getHeroVaultItems,
   getVaultDetail,
   getVaultPerson,
+  isAllowedOnPlatform,
+  isAnimeMedia,
+  isKidsSafeMedia,
   queryVaultDiscover,
   searchVaultCatalog,
 } from '../shared/vaultCatalog';
@@ -363,6 +372,97 @@ const CURATED_TMDB_IDS: Record<string, Array<{ id: number; type: MediaType }>> =
     { id: 60574, type: 'tv' },
     { id: 95557, type: 'tv' },
   ],
+  'netflix-exclusives': [
+    { id: 66732, type: 'tv' },
+    { id: 93405, type: 'tv' },
+    { id: 71446, type: 'tv' },
+    { id: 119051, type: 'tv' },
+    { id: 94605, type: 'tv' },
+    { id: 70523, type: 'tv' },
+    { id: 79352, type: 'tv' },
+    { id: 89113, type: 'tv' },
+    { id: 545609, type: 'movie' },
+    { id: 512195, type: 'movie' },
+    { id: 661374, type: 'movie' },
+    { id: 725201, type: 'movie' },
+  ],
+  'prime-top-series': [
+    { id: 76479, type: 'tv' },
+    { id: 106379, type: 'tv' },
+    { id: 84105, type: 'tv' },
+    { id: 93352, type: 'tv' },
+    { id: 108978, type: 'tv' },
+    { id: 95557, type: 'tv' },
+    { id: 101352, type: 'tv' },
+    { id: 132117, type: 'tv' },
+    { id: 84773, type: 'tv' },
+    { id: 73375, type: 'tv' },
+  ],
+  'prime-originals': [
+    { id: 76479, type: 'tv' },
+    { id: 106379, type: 'tv' },
+    { id: 108978, type: 'tv' },
+    { id: 95557, type: 'tv' },
+    { id: 84773, type: 'tv' },
+    { id: 73375, type: 'tv' },
+    { id: 588228, type: 'movie' },
+    { id: 937278, type: 'movie' },
+  ],
+  'prime-hindi-thrillers': [
+    { id: 84105, type: 'tv' },
+    { id: 93352, type: 'tv' },
+    { id: 101352, type: 'tv' },
+    { id: 132117, type: 'tv' },
+    { id: 103051, type: 'tv' },
+    { id: 124411, type: 'tv' },
+    { id: 111188, type: 'tv' },
+    { id: 100911, type: 'tv' },
+  ],
+  'crunchyroll-top-anime': [
+    { id: 127532, type: 'tv' },
+    { id: 1429, type: 'tv' },
+    { id: 85937, type: 'tv' },
+    { id: 95479, type: 'tv' },
+    { id: 209867, type: 'tv' },
+    { id: 37854, type: 'tv' },
+    { id: 114410, type: 'tv' },
+    { id: 31911, type: 'tv' },
+    { id: 120089, type: 'tv' },
+    { id: 207468, type: 'tv' },
+  ],
+  'crunchyroll-shonen': [
+    { id: 127532, type: 'tv' },
+    { id: 85937, type: 'tv' },
+    { id: 95479, type: 'tv' },
+    { id: 37854, type: 'tv' },
+    { id: 31910, type: 'tv' },
+    { id: 65930, type: 'tv' },
+    { id: 46298, type: 'tv' },
+    { id: 207468, type: 'tv' },
+  ],
+  'crunchyroll-dark-fantasy': [
+    { id: 1429, type: 'tv' },
+    { id: 114410, type: 'tv' },
+    { id: 13916, type: 'tv' },
+    { id: 88803, type: 'tv' },
+    { id: 95479, type: 'tv' },
+    { id: 127532, type: 'tv' },
+  ],
+  'crunchyroll-anime-movies': [
+    { id: 372058, type: 'movie' },
+    { id: 129, type: 'movie' },
+    { id: 810693, type: 'movie' },
+    { id: 635302, type: 'movie' },
+    { id: 916224, type: 'movie' },
+  ],
+  'crunchyroll-classics': [
+    { id: 31911, type: 'tv' },
+    { id: 209867, type: 'tv' },
+    { id: 120089, type: 'tv' },
+    { id: 46298, type: 'tv' },
+    { id: 13916, type: 'tv' },
+    { id: 88803, type: 'tv' },
+  ],
   'nolan-films': [
     { id: 157336, type: 'movie' },
     { id: 27205, type: 'movie' },
@@ -424,6 +524,64 @@ const CURATED_TMDB_IDS: Record<string, Array<{ id: number; type: MediaType }>> =
     { id: 414906, type: 'movie' },
     { id: 569094, type: 'movie' },
     { id: 76341, type: 'movie' },
+  ],
+  'top-rated-kids-movies': [
+    { id: 1022789, type: 'movie' },
+    { id: 324857, type: 'movie' },
+    { id: 569094, type: 'movie' },
+    { id: 354912, type: 'movie' },
+    { id: 8587, type: 'movie' },
+    { id: 862, type: 'movie' },
+    { id: 315162, type: 'movie' },
+    { id: 1011985, type: 'movie' },
+    { id: 502356, type: 'movie' },
+    { id: 12, type: 'movie' },
+  ],
+  'top-rated-kids-series': [
+    { id: 246, type: 'tv' },
+    { id: 82728, type: 'tv' },
+    { id: 387, type: 'tv' },
+    { id: 60572, type: 'tv' },
+    { id: 65334, type: 'tv' },
+    { id: 40075, type: 'tv' },
+    { id: 15260, type: 'tv' },
+    { id: 4686, type: 'tv' },
+  ],
+  'kids-disney-pixar': [
+    { id: 1022789, type: 'movie' },
+    { id: 354912, type: 'movie' },
+    { id: 109445, type: 'movie' },
+    { id: 277834, type: 'movie' },
+    { id: 862, type: 'movie' },
+    { id: 12, type: 'movie' },
+    { id: 8587, type: 'movie' },
+    { id: 150540, type: 'movie' },
+  ],
+  'kids-superheroes-adventure': [
+    { id: 324857, type: 'movie' },
+    { id: 569094, type: 'movie' },
+    { id: 1011985, type: 'movie' },
+    { id: 502356, type: 'movie' },
+    { id: 315162, type: 'movie' },
+    { id: 9806, type: 'movie' },
+  ],
+  'kids-comedy-animals': [
+    { id: 519182, type: 'movie' },
+    { id: 1011985, type: 'movie' },
+    { id: 315162, type: 'movie' },
+    { id: 502356, type: 'movie' },
+    { id: 12, type: 'movie' },
+    { id: 862, type: 'movie' },
+  ],
+  'kids-cartoons-series': [
+    { id: 82728, type: 'tv' },
+    { id: 387, type: 'tv' },
+    { id: 60572, type: 'tv' },
+    { id: 65334, type: 'tv' },
+    { id: 40075, type: 'tv' },
+    { id: 15260, type: 'tv' },
+    { id: 246, type: 'tv' },
+    { id: 4686, type: 'tv' },
   ],
 };
 
@@ -498,6 +656,264 @@ function rewriteBingrPlaylist(body: string, base: URL): string {
     .join('\n');
 }
 
+function normalizePlatformQuery(val?: string | null): StreamingPlatform {
+  if (val === 'prime' || val === 'crunchyroll' || val === 'netflix') return val;
+  return 'netflix';
+}
+
+async function resolveDiscoverPayload(params: URLSearchParams): Promise<{
+  list: MediaSummary[];
+  page: number;
+  total_pages: number;
+  total_results: number;
+  source: string;
+}> {
+  const type = params.get('type');
+  const platform = normalizePlatformQuery(params.get('platform'));
+  const kidsOnly = (params.get('kids') === '1' || type === 'kids') && platform === 'netflix';
+  const language = (params.get('language') || '').trim().toLowerCase();
+  const effectiveType = platform === 'crunchyroll' ? 'anime' : type;
+  const media: MediaType =
+    effectiveType === 'tv' || effectiveType === 'anime' || effectiveType === 'show' || params.get('media') === 'tv'
+      ? 'tv'
+      : 'movie';
+  const page = Math.max(1, Number(params.get('page') || 1));
+
+  if (type === 'all') {
+    const movieParams = new URLSearchParams(params);
+    movieParams.set('type', platform === 'crunchyroll' ? 'anime' : 'movie');
+    movieParams.set('media', 'movie');
+    const tvParams = new URLSearchParams(params);
+    tvParams.set('type', platform === 'crunchyroll' ? 'anime' : 'tv');
+    tvParams.set('media', 'tv');
+    const [mRes, tRes] = await Promise.all([
+      resolveDiscoverPayload(movieParams),
+      resolveDiscoverPayload(tvParams),
+    ]);
+    const combined: MediaSummary[] = [];
+    const seen = new Set<string>();
+    const maxLen = Math.max(mRes.list.length, tRes.list.length);
+    for (let i = 0; i < maxLen; i++) {
+      for (const candidate of [mRes.list[i], tRes.list[i]]) {
+        if (!candidate) continue;
+        if (!isAllowedOnPlatform(candidate, platform, kidsOnly)) continue;
+        const k = `${candidate.mediaType}:${candidate.id}`;
+        if (!seen.has(k)) {
+          seen.add(k);
+          combined.push(candidate);
+        }
+      }
+    }
+    if (page === 1) {
+      for (const seed of getAllVaultItems()) {
+        if (!isAllowedOnPlatform(seed, platform, kidsOnly)) continue;
+        const k = `${seed.mediaType}:${seed.id}`;
+        if (!seen.has(k) && combined.length < 48) {
+          seen.add(k);
+          combined.push(seed);
+        }
+      }
+    }
+    return {
+      list: combined,
+      page,
+      total_pages: Math.max(mRes.total_pages, tRes.total_pages, 10),
+      total_results: mRes.total_results + tRes.total_results,
+      source: mRes.source,
+    };
+  }
+
+  const filterIfKids = (items: MediaSummary[]) =>
+    items.filter((item) => isAllowedOnPlatform(item, platform, kidsOnly) && (platform !== 'crunchyroll' || isAnimeMedia(item)));
+
+  const apiKey = getTmdbApiKey();
+  if (apiKey) {
+    const tmdbParams = new URLSearchParams({
+      language: 'en-US',
+      include_adult: 'false',
+      page: String(page),
+      sort_by: params.get('sort_by') || 'popularity.desc',
+    });
+    const withGenres = params.get('with_genres') || params.get('genres') || '';
+    if (kidsOnly && !withGenres) {
+      tmdbParams.set('with_genres', media === 'tv' ? '16,10762' : '16,10751');
+      tmdbParams.set('without_genres', '27,80,53,10752');
+    } else if (type === 'anime' && !withGenres) {
+      tmdbParams.set('with_genres', '16');
+      tmdbParams.set('with_original_language', 'ja');
+    } else if (type === 'hindi') {
+      tmdbParams.set('with_original_language', 'hi');
+    } else if (withGenres) {
+      tmdbParams.set('with_genres', withGenres);
+    }
+    if (language && language !== 'all') {
+      tmdbParams.set('with_original_language', language);
+    }
+    if (params.get('without_genres')) tmdbParams.set('without_genres', params.get('without_genres')!);
+    if (params.get('yearMin')) {
+      tmdbParams.set(
+        media === 'tv' ? 'first_air_date.gte' : 'primary_release_date.gte',
+        `${params.get('yearMin')}-01-01`,
+      );
+    }
+    if (params.get('yearMax')) {
+      tmdbParams.set(
+        media === 'tv' ? 'first_air_date.lte' : 'primary_release_date.lte',
+        `${params.get('yearMax')}-12-31`,
+      );
+    }
+    if (params.get('ratingMin') || params.get('vote_average_gte')) {
+      tmdbParams.set('vote_average.gte', params.get('ratingMin') || params.get('vote_average_gte')!);
+    }
+    if (params.get('minVoteCount') || params.get('vote_count_gte')) {
+      tmdbParams.set('vote_count.gte', params.get('minVoteCount') || params.get('vote_count_gte')!);
+    }
+    if (params.get('with_people')) tmdbParams.set('with_people', params.get('with_people')!);
+    if (params.get('with_companies')) tmdbParams.set('with_companies', params.get('with_companies')!);
+
+    const data = await fetchTmdbJson(`/discover/${media}`, tmdbParams);
+    if (data && Array.isArray(data.results)) {
+      const list = filterIfKids(data.results.map((item: any) => mapTmdbItem(item, media)).filter(Boolean));
+      return {
+        list,
+        page: Number(data.page || 1),
+        total_pages: Number(data.total_pages || 1),
+        total_results: Number(data.total_results || list.length),
+        source: 'tmdb',
+      };
+    }
+  }
+
+  const withPeople = params.get('with_people');
+  const withCompanies = params.get('with_companies');
+  const withType = params.get('with_type');
+  const sortBy = params.get('sort_by') || 'popularity.desc';
+  const minVoteCount = Number(params.get('vote_count_gte') || 0);
+  const curatedSlugParam = params.get('curatedSlug') || '';
+  const hasFilterQuery = Boolean(params.get('genres') || params.get('yearMin') || params.get('ratingMin'));
+
+  let curatedKey: string | null = curatedSlugParam && CURATED_TMDB_IDS[curatedSlugParam] ? curatedSlugParam : null;
+  if (!curatedKey && page === 1 && !hasFilterQuery) {
+    if (kidsOnly && media === 'tv' && sortBy === 'popularity.desc') curatedKey = 'top-rated-kids-series';
+    else if (kidsOnly && media === 'movie' && sortBy === 'popularity.desc') curatedKey = 'top-rated-kids-movies';
+    else if (kidsOnly && media === 'movie') curatedKey = 'kids-disney-pixar';
+    else if (withPeople === '525') curatedKey = 'nolan-films';
+    else if (withPeople === '27571') curatedKey = 'villeneuve-films';
+    else if (withCompanies === '41077') curatedKey = 'a24-films';
+    else if (withCompanies === '420') curatedKey = 'marvel-mcu';
+    else if (withType === '2') curatedKey = 'limited-series';
+    else if (type === 'anime') curatedKey = 'anime-dominion';
+    else if ((type === 'hindi' || language === 'hi') && media === 'movie') curatedKey = 'hindi-blockbusters';
+    else if (language === 'hi' && media === 'tv') curatedKey = 'hindi-series';
+    else if (sortBy === 'revenue.desc') curatedKey = 'blockbuster-hits';
+    else if (sortBy === 'vote_average.desc' && minVoteCount >= 500) {
+      curatedKey = media === 'tv' ? 'top-rated-series' : 'top-rated-movies';
+    }
+  }
+
+  if (curatedKey && CURATED_TMDB_IDS[curatedKey]) {
+    const curated = filterIfKids(await hydrateCuratedList(CURATED_TMDB_IDS[curatedKey]));
+    if (curated.length > 0) {
+      return {
+        list: curated,
+        page: 1,
+        total_pages: type === 'hindi' || kidsOnly ? 6 : 1,
+        total_results: curated.length,
+        source: 'live-curated',
+      };
+    }
+  }
+
+  const bingrParams = new URLSearchParams({ page: String(page) });
+  const rawGenres = (params.get('with_genres') || params.get('genres') || '').replace(/\|/g, ',');
+  if (kidsOnly && !rawGenres) {
+    bingrParams.set('with_genres', media === 'tv' ? '16,10762' : '16,10751');
+  } else if (type === 'anime' && !rawGenres) {
+    bingrParams.set('with_genres', '16');
+  } else if (type === 'show' && !rawGenres) {
+    bingrParams.set('with_genres', '10764,10767');
+  } else if (rawGenres) {
+    bingrParams.set('with_genres', rawGenres);
+  }
+
+  if (type === 'hindi' || language === 'hi') {
+    bingrParams.set('with_original_language', 'hi');
+  } else if (language && language !== 'all') {
+    bingrParams.set('with_original_language', language);
+  }
+
+  if (sortBy === 'primary_release_date.desc' || sortBy === 'date') {
+    bingrParams.set('sort_by', media === 'tv' ? 'first_air_date.desc' : 'primary_release_date.desc');
+  } else if (sortBy === 'vote_average.desc') {
+    bingrParams.set('sort_by', 'vote_average.desc');
+  } else {
+    bingrParams.set('sort_by', 'popularity.desc');
+  }
+
+  const useTrending =
+    !kidsOnly &&
+    page === 1 &&
+    !bingrParams.get('with_genres') &&
+    !bingrParams.get('with_original_language') &&
+    bingrParams.get('sort_by') === 'popularity.desc' &&
+    !params.get('yearMin') &&
+    !params.get('ratingMin');
+
+  const endpoint = useTrending
+    ? `/trending/${media}`
+    : `/discover/${media}?${bingrParams.toString()}`;
+
+  const liveData = await fetchBingrJson(endpoint);
+  if (liveData && Array.isArray(liveData.results)) {
+    const yearMin = Number(params.get('yearMin') || 0);
+    const ratingMin = Number(params.get('ratingMin') || 0);
+
+    let list = filterIfKids(
+      liveData.results
+        .map((item: any) => mapTmdbItem(item, media))
+        .filter((m: MediaSummary | null): m is MediaSummary => Boolean(m && m.poster)),
+    );
+
+    if (yearMin > 0) {
+      list = list.filter((m: MediaSummary) => {
+        const y = Number(m.year);
+        return !y || y >= yearMin;
+      });
+    }
+    if (ratingMin > 0) {
+      list = list.filter((m: MediaSummary) => Number(m.score) >= ratingMin);
+    }
+    if (sortBy === 'vote_average.desc') {
+      list.sort((a: MediaSummary, b: MediaSummary) => Number(b.score) - Number(a.score));
+    } else if (sortBy === 'primary_release_date.desc') {
+      list.sort((a: MediaSummary, b: MediaSummary) => Number(b.year || 0) - Number(a.year || 0));
+    }
+
+    if (kidsOnly && list.length < 8) {
+      const vaultKids = queryVaultDiscover(params).list;
+      const seen = new Set(list.map((i) => `${i.mediaType}:${i.id}`));
+      for (const vk of vaultKids) {
+        if (!seen.has(`${vk.mediaType}:${vk.id}`)) {
+          list.push(vk);
+          seen.add(`${vk.mediaType}:${vk.id}`);
+        }
+      }
+    }
+
+    if (list.length > 0) {
+      return {
+        list,
+        page: Number(liveData.page || page),
+        total_pages: Number(liveData.total_pages || 10),
+        total_results: list.length * Number(liveData.total_pages || 1),
+        source: 'live',
+      };
+    }
+  }
+
+  return { ...queryVaultDiscover(params), source: 'vault' };
+}
+
 export function createApiRouter(): express.Router {
   const router = express.Router();
 
@@ -512,39 +928,127 @@ export function createApiRouter(): express.Router {
   });
 
   router.get('/tmdb/hero', async (req, res) => {
-    const media: MediaType = req.query.media === 'tv' ? 'tv' : 'movie';
-    const apiKey = getTmdbApiKey();
+    const platform = normalizePlatformQuery(String(req.query.platform || 'netflix'));
+    const kidsOnly = req.query.kids === '1' && platform === 'netflix';
 
-    if (apiKey) {
-      const data = await fetchTmdbJson(
-        `/trending/${media}/week`,
-        new URLSearchParams({ language: 'en-US', page: '1' }),
+    if (platform === 'crunchyroll') {
+      const animeHero = await hydrateCuratedList(CURATED_TMDB_IDS['crunchyroll-top-anime'].slice(0, 6));
+      const safe = animeHero.filter((item) => isAnimeMedia(item));
+      return res.json({
+        results: safe.length > 0 ? safe : getHeroVaultItems(false, 'crunchyroll'),
+        source: safe.length > 0 ? 'live-crunchyroll' : 'vault-crunchyroll',
+      });
+    }
+
+    if (platform === 'prime') {
+      const primeHero = await hydrateCuratedList(CURATED_TMDB_IDS['prime-top-series'].slice(0, 6));
+      const safe = primeHero.filter((item) => isAllowedOnPlatform(item, 'prime', false));
+      return res.json({
+        results: safe.length > 0 ? safe : getHeroVaultItems(false, 'prime'),
+        source: safe.length > 0 ? 'live-prime' : 'vault-prime',
+      });
+    }
+
+    if (kidsOnly) {
+      const kidsSeed = await hydrateCuratedList(CURATED_TMDB_IDS['top-rated-kids-movies'].slice(0, 6));
+      const safeKids = kidsSeed.filter((item) => isKidsSafeMedia(item));
+      return res.json({
+        results: safeKids.length > 0 ? safeKids : getHeroVaultItems(true, 'netflix'),
+        source: safeKids.length > 0 ? 'live-kids' : 'vault-kids',
+      });
+    }
+
+    const nfHero = await hydrateCuratedList(CURATED_TMDB_IDS['netflix-exclusives'].slice(0, 6));
+    if (nfHero.length > 0) {
+      return res.json({ results: nfHero, source: 'live-netflix' });
+    }
+
+    return res.json({ results: getHeroVaultItems(false, 'netflix'), source: 'vault' });
+  });
+
+  router.get('/tmdb/home-feed', async (req, res) => {
+    const platform = normalizePlatformQuery(String(req.query.platform || 'netflix'));
+    const kidsOnly = req.query.kids === '1' && platform === 'netflix';
+    const cacheKey = `home-feed:${platform}:${kidsOnly ? 'kids' : 'adult'}`;
+    const cached = getCached<{
+      hero: MediaSummary[];
+      rails: Record<string, MediaSummary[]>;
+      allSeed: MediaSummary[];
+      source: string;
+    }>(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    const heroPromise =
+      platform === 'crunchyroll'
+        ? hydrateCuratedList(CURATED_TMDB_IDS['crunchyroll-top-anime'].slice(0, 6)).then((list) => {
+            const safe = list.filter((i) => isAnimeMedia(i));
+            return safe.length > 0 ? safe : getHeroVaultItems(false, 'crunchyroll');
+          })
+        : platform === 'prime'
+          ? hydrateCuratedList(CURATED_TMDB_IDS['prime-top-series'].slice(0, 6)).then((list) => {
+              const safe = list.filter((i) => isAllowedOnPlatform(i, 'prime', false));
+              return safe.length > 0 ? safe : getHeroVaultItems(false, 'prime');
+            })
+          : kidsOnly
+            ? hydrateCuratedList(CURATED_TMDB_IDS['top-rated-kids-movies'].slice(0, 6)).then((list) => {
+                const safe = list.filter((i) => isKidsSafeMedia(i));
+                return safe.length > 0 ? safe : getHeroVaultItems(true, 'netflix');
+              })
+            : hydrateCuratedList(CURATED_TMDB_IDS['netflix-exclusives'].slice(0, 6)).then((list) => {
+                const safe = list.filter((i) => isAllowedOnPlatform(i, 'netflix', false));
+                return safe.length > 0 ? safe : getHeroVaultItems(false, 'netflix');
+              });
+
+    const { top, curated } = getPlatformCategories(platform, kidsOnly);
+    const cats: CuratedCategoryConfig[] = [...top, ...curated];
+
+    const rails: Record<string, MediaSummary[]> = {};
+    const batchSize = 4;
+    for (let i = 0; i < cats.length; i += batchSize) {
+      const batch = cats.slice(i, i + batchSize);
+      const settled = await Promise.allSettled(
+        batch.map(async (cat) => {
+          const qs = new URLSearchParams({
+            media: cat.mediaType,
+            curatedSlug: cat.slug,
+            platform,
+            ...(kidsOnly ? { kids: '1' } : {}),
+            ...cat.query,
+          });
+          const data = await resolveDiscoverPayload(qs);
+          return { slug: cat.slug, list: data.list };
+        }),
       );
-      if (data && Array.isArray(data.results)) {
-        const mapped = data.results
-          .map((item: any) => mapTmdbItem(item, media))
-          .filter(Boolean)
-          .slice(0, 6);
-        if (mapped.length > 0) {
-          return res.json({ results: mapped, source: 'tmdb' });
+      for (const r of settled) {
+        if (r.status === 'fulfilled') {
+          rails[r.value.slug] = r.value.list;
         }
       }
     }
 
-    const bingrTrending = await fetchBingrJson(`/trending/${media}`);
-    if (bingrTrending && Array.isArray(bingrTrending.results)) {
-      const topIds = bingrTrending.results
-        .filter((r: any) => r.backdrop && r.poster)
-        .slice(0, 6)
-        .map((r: any) => ({ id: Number(r.id), type: (r.type === 'tv' ? 'tv' : media) as MediaType }));
-
-      const hydrated = await hydrateCuratedList(topIds);
-      if (hydrated.length > 0) {
-        return res.json({ results: hydrated, source: 'live' });
+    const hero = await heroPromise;
+    const seedMap = new Map<string, MediaSummary>();
+    for (const item of getAllVaultItems()) {
+      if (!isAllowedOnPlatform(item, platform, kidsOnly)) continue;
+      seedMap.set(`${item.mediaType}:${item.id}`, item);
+    }
+    for (const list of Object.values(rails)) {
+      for (const item of list) {
+        if (!isAllowedOnPlatform(item, platform, kidsOnly)) continue;
+        seedMap.set(`${item.mediaType}:${item.id}`, item);
       }
     }
 
-    return res.json({ results: getHeroVaultItems(), source: 'vault' });
+    const payload = {
+      hero,
+      rails,
+      allSeed: Array.from(seedMap.values()),
+      source: 'live-batched',
+    };
+    setCached(cacheKey, payload, 15 * 60 * 1000);
+    return res.json(payload);
   });
 
   router.get('/tmdb/discover', async (req, res) => {
@@ -552,185 +1056,20 @@ export function createApiRouter(): express.Router {
     Object.entries(req.query).forEach(([k, v]) => {
       if (typeof v === 'string' && v.trim()) params.set(k, v.trim());
     });
-
-    const type = params.get('type');
-    const language = (params.get('language') || '').trim().toLowerCase();
-    const media: MediaType =
-      type === 'tv' || type === 'anime' || type === 'show' || params.get('media') === 'tv'
-        ? 'tv'
-        : 'movie';
-    const page = Math.max(1, Number(params.get('page') || 1));
-
-    const apiKey = getTmdbApiKey();
-    if (apiKey) {
-      const tmdbParams = new URLSearchParams({
-        language: 'en-US',
-        include_adult: 'false',
-        page: String(page),
-        sort_by: params.get('sort_by') || 'popularity.desc',
-      });
-      const withGenres = params.get('with_genres') || params.get('genres') || '';
-      if (type === 'anime' && !withGenres) {
-        tmdbParams.set('with_genres', '16');
-        tmdbParams.set('with_original_language', 'ja');
-      } else if (type === 'hindi') {
-        tmdbParams.set('with_original_language', 'hi');
-      } else if (withGenres) {
-        tmdbParams.set('with_genres', withGenres);
-      }
-      if (language && language !== 'all') {
-        tmdbParams.set('with_original_language', language);
-      }
-      if (params.get('without_genres')) tmdbParams.set('without_genres', params.get('without_genres')!);
-      if (params.get('yearMin')) {
-        tmdbParams.set(
-          media === 'tv' ? 'first_air_date.gte' : 'primary_release_date.gte',
-          `${params.get('yearMin')}-01-01`,
-        );
-      }
-      if (params.get('yearMax')) {
-        tmdbParams.set(
-          media === 'tv' ? 'first_air_date.lte' : 'primary_release_date.lte',
-          `${params.get('yearMax')}-12-31`,
-        );
-      }
-      if (params.get('ratingMin') || params.get('vote_average_gte')) {
-        tmdbParams.set('vote_average.gte', params.get('ratingMin') || params.get('vote_average_gte')!);
-      }
-      if (params.get('minVoteCount') || params.get('vote_count_gte')) {
-        tmdbParams.set('vote_count.gte', params.get('minVoteCount') || params.get('vote_count_gte')!);
-      }
-      if (params.get('with_people')) tmdbParams.set('with_people', params.get('with_people')!);
-      if (params.get('with_companies')) tmdbParams.set('with_companies', params.get('with_companies')!);
-
-      const data = await fetchTmdbJson(`/discover/${media}`, tmdbParams);
-      if (data && Array.isArray(data.results)) {
-        const list = data.results.map((item: any) => mapTmdbItem(item, media)).filter(Boolean);
-        return res.json({
-          list,
-          page: Number(data.page || 1),
-          total_pages: Number(data.total_pages || 1),
-          total_results: Number(data.total_results || list.length),
-          source: 'tmdb',
-        });
-      }
-    }
-
-    const withPeople = params.get('with_people');
-    const withCompanies = params.get('with_companies');
-    const withType = params.get('with_type');
-    const sortBy = params.get('sort_by') || 'popularity.desc';
-    const minVoteCount = Number(params.get('vote_count_gte') || 0);
-    const hasFilterQuery = Boolean(params.get('genres') || params.get('yearMin') || params.get('ratingMin'));
-
-    let curatedKey: string | null = null;
-    if (page === 1 && !hasFilterQuery) {
-      if (withPeople === '525') curatedKey = 'nolan-films';
-      else if (withPeople === '27571') curatedKey = 'villeneuve-films';
-      else if (withCompanies === '41077') curatedKey = 'a24-films';
-      else if (withCompanies === '420') curatedKey = 'marvel-mcu';
-      else if (withType === '2') curatedKey = 'limited-series';
-      else if (type === 'anime') curatedKey = 'anime-dominion';
-      else if ((type === 'hindi' || language === 'hi') && media === 'movie') curatedKey = 'hindi-blockbusters';
-      else if (language === 'hi' && media === 'tv') curatedKey = 'hindi-series';
-      else if (sortBy === 'revenue.desc') curatedKey = 'blockbuster-hits';
-      else if (sortBy === 'vote_average.desc' && minVoteCount >= 500) {
-        curatedKey = media === 'tv' ? 'top-rated-series' : 'top-rated-movies';
-      }
-    }
-
-    if (curatedKey && CURATED_TMDB_IDS[curatedKey]) {
-      const curated = await hydrateCuratedList(CURATED_TMDB_IDS[curatedKey]);
-      if (curated.length > 0) {
-        return res.json({
-          list: curated,
-          page: 1,
-          total_pages: type === 'hindi' ? 10 : 1,
-          total_results: curated.length,
-          source: 'live-curated',
-        });
-      }
-    }
-
-    const bingrParams = new URLSearchParams({ page: String(page) });
-    const rawGenres = (params.get('with_genres') || params.get('genres') || '').replace(/\|/g, ',');
-    if (type === 'anime' && !rawGenres) {
-      bingrParams.set('with_genres', '16');
-    } else if (type === 'show' && !rawGenres) {
-      bingrParams.set('with_genres', '10764,10767');
-    } else if (rawGenres) {
-      bingrParams.set('with_genres', rawGenres);
-    }
-
-    if (type === 'hindi' || language === 'hi') {
-      bingrParams.set('with_original_language', 'hi');
-    } else if (language && language !== 'all') {
-      bingrParams.set('with_original_language', language);
-    }
-
-    if (sortBy === 'primary_release_date.desc' || sortBy === 'date') {
-      bingrParams.set('sort_by', media === 'tv' ? 'first_air_date.desc' : 'primary_release_date.desc');
-    } else if (sortBy === 'vote_average.desc') {
-      bingrParams.set('sort_by', 'vote_average.desc');
-    } else {
-      bingrParams.set('sort_by', 'popularity.desc');
-    }
-
-    const useTrending =
-      page === 1 &&
-      !bingrParams.get('with_genres') &&
-      !bingrParams.get('with_original_language') &&
-      bingrParams.get('sort_by') === 'popularity.desc' &&
-      !params.get('yearMin') &&
-      !params.get('ratingMin');
-
-    const endpoint = useTrending
-      ? `/trending/${media}`
-      : `/discover/${media}?${bingrParams.toString()}`;
-
-    const liveData = await fetchBingrJson(endpoint);
-    if (liveData && Array.isArray(liveData.results)) {
-      const yearMin = Number(params.get('yearMin') || 0);
-      const ratingMin = Number(params.get('ratingMin') || 0);
-
-      let list = liveData.results
-        .map((item: any) => mapTmdbItem(item, media))
-        .filter((m: MediaSummary | null): m is MediaSummary => Boolean(m && m.poster));
-
-      if (yearMin > 0) {
-        list = list.filter((m: MediaSummary) => {
-          const y = Number(m.year);
-          return !y || y >= yearMin;
-        });
-      }
-      if (ratingMin > 0) {
-        list = list.filter((m: MediaSummary) => Number(m.score) >= ratingMin);
-      }
-      if (sortBy === 'vote_average.desc') {
-        list.sort((a: MediaSummary, b: MediaSummary) => Number(b.score) - Number(a.score));
-      } else if (sortBy === 'primary_release_date.desc') {
-        list.sort((a: MediaSummary, b: MediaSummary) => Number(b.year || 0) - Number(a.year || 0));
-      }
-
-      if (list.length > 0) {
-        return res.json({
-          list,
-          page: Number(liveData.page || page),
-          total_pages: Number(liveData.total_pages || 10),
-          total_results: list.length * Number(liveData.total_pages || 1),
-          source: 'live',
-        });
-      }
-    }
-
-    return res.json({ ...queryVaultDiscover(params), source: 'vault' });
+    const payload = await resolveDiscoverPayload(params);
+    return res.json(payload);
   });
 
   router.get('/tmdb/search', async (req, res) => {
     const q = String(req.query.q || '').trim();
+    const platform = normalizePlatformQuery(String(req.query.platform || 'netflix'));
+    const kidsOnly = req.query.kids === '1' && platform === 'netflix';
     if (!q) {
       return res.json({ results: [], people: [], source: 'live' });
     }
+
+    const filterPlatform = (items: MediaSummary[]) =>
+      items.filter((item) => isAllowedOnPlatform(item, platform, kidsOnly));
 
     const apiKey = getTmdbApiKey();
     if (apiKey) {
@@ -743,25 +1082,31 @@ export function createApiRouter(): express.Router {
       if (movieData || tvData) {
         const movies = (movieData?.results || []).map((m: any) => mapTmdbItem(m, 'movie')).filter(Boolean);
         const tv = (tvData?.results || []).map((t: any) => mapTmdbItem(t, 'tv')).filter(Boolean);
-        const results = [...movies, ...tv].sort((a: any, b: any) => b.popularity - a.popularity);
-        const people: PersonResult[] = (peopleData?.results || []).slice(0, 12).map((p: any) => ({
-          id: Number(p.id),
-          name: String(p.name || ''),
-          profile: p.profile_path ? `${TMDB_IMG_W500}${p.profile_path}` : '',
-          popularity: Number(p.popularity || 0),
-          department: String(p.known_for_department || 'Acting'),
-          knownFor: Array.isArray(p.known_for)
-            ? p.known_for.map((k: any) => String(k.title || k.name || '')).filter(Boolean)
-            : [],
-        }));
+        const results = filterPlatform([...movies, ...tv].sort((a: any, b: any) => b.popularity - a.popularity));
+        const people: PersonResult[] =
+          kidsOnly || platform === 'crunchyroll'
+            ? []
+            : (peopleData?.results || []).slice(0, 12).map((p: any) => ({
+                id: Number(p.id),
+                name: String(p.name || ''),
+                profile: p.profile_path ? `${TMDB_IMG_W500}${p.profile_path}` : '',
+                popularity: Number(p.popularity || 0),
+                department: String(p.known_for_department || 'Acting'),
+                knownFor: Array.isArray(p.known_for)
+                  ? p.known_for.map((k: any) => String(k.title || k.name || '')).filter(Boolean)
+                  : [],
+              }));
         return res.json({ results, people, source: 'tmdb' });
       }
     }
 
     const qLower = q.toLowerCase();
-    const matchedDirectory = Array.from(peopleDirectory.values())
-      .filter((p) => p.name.toLowerCase().includes(qLower))
-      .slice(0, 8);
+    const matchedDirectory =
+      kidsOnly || platform === 'crunchyroll'
+        ? []
+        : Array.from(peopleDirectory.values())
+            .filter((p) => p.name.toLowerCase().includes(qLower))
+            .slice(0, 8);
 
     const [bingrSearch, hydratedPeople] = await Promise.all([
       fetchBingrJson(`/search?q=${encodeURIComponent(q)}`),
@@ -794,12 +1139,14 @@ export function createApiRouter(): express.Router {
       ),
     ]);
 
-    const vaultMatch = searchVaultCatalog(q);
+    const vaultMatch = searchVaultCatalog(q, kidsOnly, platform);
 
     if (bingrSearch && Array.isArray(bingrSearch.results)) {
-      const results = bingrSearch.results
-        .map((item: any) => mapTmdbItem(item, item.type === 'tv' ? 'tv' : 'movie'))
-        .filter((m: MediaSummary | null): m is MediaSummary => Boolean(m && m.poster));
+      const results = filterPlatform(
+        bingrSearch.results
+          .map((item: any) => mapTmdbItem(item, item.type === 'tv' ? 'tv' : 'movie'))
+          .filter((m: MediaSummary | null): m is MediaSummary => Boolean(m && m.poster)),
+      );
 
       return res.json({
         results: results.length > 0 ? results : vaultMatch.results,
@@ -821,6 +1168,15 @@ export function createApiRouter(): express.Router {
       return res.status(400).json({ error: 'Invalid tmdbId' });
     }
     const mediaType: MediaType = req.query.mediaType === 'tv' || req.query.type === 'tv' ? 'tv' : 'movie';
+    const kidsOnly = req.query.kids === '1';
+
+    const sanitizeDetail = (d: MediaDetail): MediaDetail => {
+      if (!kidsOnly) return d;
+      return {
+        ...d,
+        recommendations: (d.recommendations || []).filter((r) => isKidsSafeMedia(r)),
+      };
+    };
 
     const apiKey = getTmdbApiKey();
     if (apiKey) {
@@ -877,20 +1233,20 @@ export function createApiRouter(): express.Router {
             .map((r: any) => mapTmdbItem(r, mediaType))
             .filter(Boolean) as MediaSummary[],
         };
-        return res.json({ detail, source: 'tmdb' });
+        return res.json({ detail: sanitizeDetail(detail), source: 'tmdb' });
       }
     }
 
     const liveDetail = await fetchBingrDetailMapped(mediaType, id);
     if (liveDetail) {
-      return res.json({ detail: liveDetail, source: 'live' });
+      return res.json({ detail: sanitizeDetail(liveDetail), source: 'live' });
     }
 
     const vaultDetail = getVaultDetail(id, mediaType);
     if (!vaultDetail) {
       return res.status(404).json({ error: 'Title not found' });
     }
-    return res.json({ detail: vaultDetail, source: 'vault' });
+    return res.json({ detail: sanitizeDetail(vaultDetail), source: 'vault' });
   });
 
   router.get('/tmdb/person/:id', async (req, res) => {

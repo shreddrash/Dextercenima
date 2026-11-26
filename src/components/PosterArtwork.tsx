@@ -27,20 +27,24 @@ export default function PosterArtwork({
   if (!src || failed) {
     return (
       <div
-        className={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#230c47] via-[#100622] to-[#05020b] p-4 text-center ${className}`}
+        className={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[var(--dx-surface-elevated)] via-[var(--dx-surface)] to-[var(--dx-bg)] p-4 text-center ${className}`}
       >
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(168,85,247,0.32),transparent_60%)]"
+          className="pointer-events-none absolute inset-0 opacity-25"
+          style={{
+            background:
+              'radial-gradient(circle at 30% 20%, var(--dx-accent), transparent 65%)',
+          }}
         />
-        <Film className="relative mb-2 h-8 w-8 text-purple-300/75" />
+        <Film className="relative mb-2 h-8 w-8 text-[var(--dx-accent)] opacity-85" />
         {title && (
-          <span className="relative line-clamp-2 font-display text-sm font-bold tracking-tight text-purple-50">
+          <span className="relative line-clamp-2 font-display text-sm font-bold tracking-tight text-white">
             {title}
           </span>
         )}
         {subtitle && (
-          <span className="relative mt-1 text-xs text-purple-300/75">{subtitle}</span>
+          <span className="relative mt-1 text-xs text-white/60">{subtitle}</span>
         )}
       </div>
     );

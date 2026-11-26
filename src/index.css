@@ -2,17 +2,40 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --dx-bg: #05020b;
-  --dx-surface: #0d061a;
-  --dx-surface-card: #120924;
-  --dx-surface-elevated: #1b0e36;
-  --dx-border: rgba(168, 85, 247, 0.2);
-  --dx-border-strong: rgba(192, 132, 252, 0.45);
-  --dx-accent: #9333ea;
-  --dx-accent-bright: #c084fc;
-  --dx-glow: rgba(147, 51, 234, 0.38);
-  --dx-text: #f5f0ff;
-  --dx-text-muted: #b7a6d9;
+  --dx-bg: #141414;
+  --dx-surface: #181818;
+  --dx-surface-card: #1f1f1f;
+  --dx-surface-elevated: #262626;
+  --dx-accent: #e50914;
+  --dx-accent-hover: #f40612;
+  --dx-red: #e50914;
+  --dx-red-hover: #f40612;
+  --dx-match: #46d369;
+  --dx-border: rgba(255, 255, 255, 0.14);
+  --dx-text: #ffffff;
+  --dx-text-muted: #b3b3b3;
+}
+
+:root[data-platform="prime"] {
+  --dx-bg: #00050d;
+  --dx-surface: #0f171e;
+  --dx-surface-card: #16212c;
+  --dx-surface-elevated: #1d2b39;
+  --dx-accent: #00a8e1;
+  --dx-accent-hover: #1a98ff;
+  --dx-red: #00a8e1;
+  --dx-red-hover: #1a98ff;
+}
+
+:root[data-platform="crunchyroll"] {
+  --dx-bg: #0a0908;
+  --dx-surface: #141519;
+  --dx-surface-card: #1b1d24;
+  --dx-surface-elevated: #242730;
+  --dx-accent: #f47521;
+  --dx-accent-hover: #ff8a34;
+  --dx-red: #f47521;
+  --dx-red-hover: #ff8a34;
 }
 
 @layer base {
@@ -33,46 +56,51 @@
   }
 }
 
-/* Crazy obsidian-violet cinema atmosphere */
 .dx-stage-bg {
-  background-color: #05020b;
-  background-image:
-    radial-gradient(ellipse 85% 45% at 50% -5%, rgba(147, 51, 234, 0.25), transparent 70%),
-    radial-gradient(ellipse 50% 40% at 90% 25%, rgba(126, 34, 206, 0.14), transparent 65%),
-    radial-gradient(ellipse 45% 40% at 10% 75%, rgba(88, 28, 135, 0.14), transparent 65%);
+  background-color: var(--dx-bg);
 }
 
 .dx-glass-panel {
-  background: linear-gradient(145deg, rgba(22, 11, 44, 0.88), rgba(10, 5, 22, 0.95));
-  border: 1px solid rgba(168, 85, 247, 0.24);
-  backdrop-filter: blur(20px);
-  box-shadow:
-    0 24px 60px -15px rgba(5, 2, 11, 0.9),
-    inset 0 1px 0 0 rgba(216, 180, 254, 0.12);
+  background-color: var(--dx-surface);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 28px 80px -12px rgba(0, 0, 0, 0.92);
 }
 
-.dx-purple-glow {
-  box-shadow:
-    0 0 32px -4px rgba(147, 51, 234, 0.45),
-    0 14px 36px -10px rgba(0, 0, 0, 0.9);
-}
-
-/* Netflix 2026 outlined Top-10 rank typography */
+/* Authentic Top-10 outlined rank numerals */
 .dx-rank-stroke {
   font-family: 'Outfit', system-ui, sans-serif;
-  -webkit-text-stroke: 3px rgba(192, 132, 252, 0.72);
-  color: rgba(10, 4, 20, 0.95);
-  text-shadow: 0 8px 28px rgba(147, 51, 234, 0.48);
+  -webkit-text-stroke: 3.5px #595959;
+  color: var(--dx-bg);
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.85);
 }
 
-.dx-card-hover {
-  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms ease, box-shadow 200ms ease;
+:root[data-platform="prime"] .dx-rank-stroke {
+  -webkit-text-stroke: 3.5px rgba(0, 168, 225, 0.65);
 }
 
-.dx-card-hover:hover {
-  transform: scale(1.04) translateY(-4px);
-  border-color: rgba(192, 132, 252, 0.65);
-  box-shadow: 0 20px 44px -12px rgba(147, 51, 234, 0.5);
+:root[data-platform="crunchyroll"] .dx-rank-stroke {
+  -webkit-text-stroke: 3.5px rgba(244, 117, 33, 0.72);
+}
+
+@media (min-width: 1024px) {
+  .dx-rank-stroke {
+    -webkit-text-stroke: 4px #6b6b6b;
+  }
+  :root[data-platform="prime"] .dx-rank-stroke {
+    -webkit-text-stroke: 4px rgba(0, 168, 225, 0.72);
+  }
+  :root[data-platform="crunchyroll"] .dx-rank-stroke {
+    -webkit-text-stroke: 4px rgba(244, 117, 33, 0.8);
+  }
+}
+
+/* Hover card motion */
+.nf-card {
+  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 240ms ease;
+}
+
+.nf-card:hover {
+  z-index: 30;
 }
 
 /* Hide scrollbars on horizontal cinema rails */
@@ -84,24 +112,112 @@
   scrollbar-width: none;
 }
 
-/* Custom sleek purple scrollbar for vertical page */
+/* Clean dark scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #07030f;
+  background: var(--dx-bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(147, 51, 234, 0.45);
+  background: rgba(255, 255, 255, 0.22);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(192, 132, 252, 0.7);
+  background: var(--dx-accent);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dx-card-hover:hover {
+  .nf-card:hover {
     transform: none;
   }
+}
+
+@keyframes dxLetterPop {
+  0% {
+    opacity: 0;
+    filter: brightness(2) blur(6px);
+    letter-spacing: 0.12em;
+  }
+  65% {
+    opacity: 1;
+    filter: brightness(1.35) blur(0px);
+  }
+  100% {
+    opacity: 1;
+    filter: brightness(1) blur(0px);
+    letter-spacing: -0.04em;
+  }
+}
+
+@keyframes dxCrestAppear {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes dxBarFill {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes primeSmileDraw {
+  0% {
+    stroke-dashoffset: 320;
+    opacity: 0.2;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes crunchySpiralSpin {
+  0% {
+    transform: scale(0.55) rotate(-140deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.08) rotate(12deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.dx-intro-letter {
+  animation: dxLetterPop 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dx-intro-crest {
+  animation: dxCrestAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dx-intro-subtitle {
+  animation: dxCrestAppear 0.7s ease 0.2s both;
+}
+
+.dx-intro-bar {
+  animation: dxBarFill 4.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.prime-smile-stroke {
+  stroke-dasharray: 320;
+  animation: primeSmileDraw 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.55s both;
+}
+
+.crunchy-spiral-anim {
+  animation: crunchySpiralSpin 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }

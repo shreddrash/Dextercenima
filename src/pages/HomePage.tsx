@@ -1,89 +1,145 @@
-import { Play, Trash2 } from 'lucide-react';
+import { ChevronDown, Play, Sparkles, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { HOME_CURATED_CATEGORIES, TOP_RATED_CATEGORIES } from '../shared/curatedCategories';
-import type { MediaSummary, PlayRecord } from '../shared/types';
-import { fetchDiscoverTitles, fetchHeroTitles } from '../lib/api';
-import { buildPlayUrl, navigateTo } from '../lib/router';
-import { deletePlayRecord, getAllPlayRecords, subscribeVaultUpdates } from '../lib/vaultStorage';
 import HeroSpotlight from '../components/HeroSpotlight';
 import HorizontalRail from '../components/HorizontalRail';
+import MediaCard from '../components/MediaCard';
 import { DEXTERX_LOGO_URL } from '../components/Navbar';
 import PosterArtwork from '../components/PosterArtwork';
+import { fetchDiscoverTitles, fetchHomeFeed } from '../lib/api';
+import { PLATFORM_THEMES } from '../lib/platform';
+import { buildPlayUrl, navigateTo } from '../lib/router';
+import { deletePlayRecord, getAllPlayRecords, subscribeVaultUpdates } from '../lib/vaultStorage';
+import { getPlatformCategories } from '../shared/curatedCategories';
+import type { MediaSummary, PlayRecord, StreamingPlatform, UserProfile } from '../shared/types';
+import { isAllowedOnPlatform } from '../shared/vaultCatalog';
 
 interface HomePageProps {
+  platform: StreamingPlatform;
+  activeProfile: UserProfile;
   onInspect: (item: MediaSummary) => void;
 }
 
-export default function HomePage({ onInspect }: HomePageProps) {
+export default function HomePage({ platform, activeProfile, onInspect }: HomePageProps) {
+  const isKids = platform === 'netflix' && activeProfile.isKids;
+  const theme = PLATFORM_THEMES[platform];
+
   const [heroItems, setHeroItems] = useState<MediaSummary[]>([]);
   const [rails, setRails] = useState<Record<string, MediaSummary[]>>({});
+  const [allCatalog, setAllCatalog] = useState<MediaSummary[]>([]);
+  const [catalogPage, setCatalogPage] = useState(1);
+  const [loadingMoreCatalog, setLoadingMoreCatalog] = useState(false);
   const [history, setHistory] = useState<PlayRecord[]>(() => getAllPlayRecords());
 
   useEffect(() => {
+    setHistory(getAllPlayRecords());
     return subscribeVaultUpdates(() => {
       setHistory(getAllPlayRecords());
     });
-  }, []);
+  }, [activeProfile.id, platform]);
 
   useEffect(() => {
     let cancelled = false;
+    setCatalogPage(1);
 
-    fetchHeroTitles()
-      .then((results) => {
+    fetchHomeFeed(isKids, platform)
+      .then((feed) => {
         if (!cancelled) {
-          setHeroItems(results);
+          setHeroItems(feed.hero);
+          setRails(feed.rails);
+          setAllCatalog(feed.allSeed);
         }
       })
       .catch(() => {});
 
-    const allCats = [...TOP_RATED_CATEGORIES, ...HOME_CURATED_CATEGORIES];
-    allCats.forEach((cat) => {
-      const qs = new URLSearchParams({
-        media: cat.mediaType,
-        ...cat.query,
-      });
-      fetchDiscoverTitles(qs)
-        .then((data) => {
-          if (!cancelled) {
-            setRails((prev) => ({ ...prev, [cat.slug]: data.list }));
-          }
-        })
-        .catch(() => {});
-    });
-
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isKids, platform]);
+
+  const loadMoreCatalog = async () => {
+    if (loadingMoreCatalog) return;
+    setLoadingMoreCatalog(true);
+    const nextPage = catalogPage + 1;
+    try {
+      const qs = new URLSearchParams({
+        type: platform === 'crunchyroll' ? 'anime' : isKids ? 'kids' : 'all',
+        platform,
+        page: String(nextPage),
+        sort_by: 'popularity.desc',
+      });
+      const res = await fetchDiscoverTitles(qs, isKids, platform);
+      setAllCatalog((prev) => {
+        const seen = new Set(prev.map((i) => `${i.mediaType}:${i.id}`));
+        const additions = res.list.filter((item) => {
+          if (!isAllowedOnPlatform(item, platform, isKids)) return false;
+          const key = `${item.mediaType}:${item.id}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        return [...prev, ...additions];
+      });
+      setCatalogPage(nextPage);
+    } finally {
+      setLoadingMoreCatalog(false);
+    }
+  };
+
+  const { top: topCategories, curated: curatedCategories } = getPlatformCategories(
+    platform,
+    isKids,
+  );
 
   return (
-    <div className="w-full">
-      <HeroSpotlight items={heroItems} onInspect={onInspect} />
+    <div className="w-full bg-[var(--dx-bg)]">
+      <HeroSpotlight
+        items={heroItems}
+        platform={platform}
+        isKidsMode={isKids}
+        onInspect={onInspect}
+      />
 
-      {/* Full-Width Edge-to-Edge Netflix 2026 Rails overlapping hero fade on PC */}
-      <div className="relative z-20 w-full px-4 sm:px-6 lg:px-12 md:-mt-24">
-        {/* Continue Watching Rail */}
+      <div className="relative z-20 w-full px-4 sm:px-6 lg:px-12 md:-mt-28">
+        {isKids && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[4px] border border-sky-400/30 bg-sky-950/35 px-4 py-2.5 text-xs sm:text-sm text-sky-100">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-sky-400 shrink-0" />
+              <span>
+                <strong>Kids Mode Active</strong> — Showing strictly verified kids movies &amp; cartoons for{' '}
+                <strong>{activeProfile.name}</strong>.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {platform === 'crunchyroll' && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[4px] border border-[#F47521]/35 bg-[#F47521]/10 px-4 py-2.5 text-xs sm:text-sm text-orange-100">
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#F47521]" />
+              <span>
+                <strong>Crunchyroll Anime Mode</strong> — Streaming strictly verified anime series &amp; anime films only.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Continue Watching */}
         {history.length > 0 && (
-          <section className="pb-4 pt-2">
-            <div className="mb-3.5 flex items-center justify-between">
-              <div>
-                <h2 className="font-display text-lg font-bold tracking-tight text-white sm:text-xl lg:text-2xl">
-                  Continue Watching
-                </h2>
-                <p className="mt-0.5 text-xs text-purple-300/75">
-                  Resume right where you left off
-                </p>
-              </div>
+          <section className="py-4">
+            <div className="mb-2.5 flex items-center justify-between">
+              <h2 className="font-display text-base sm:text-xl font-bold tracking-tight text-[#e5e5e5]">
+                Continue Watching for {activeProfile.name}
+              </h2>
               <button
                 type="button"
                 onClick={() => navigateTo('/my')}
-                className="text-xs font-semibold text-purple-300 hover:text-white transition-colors cursor-pointer"
+                className="text-xs font-semibold text-[#b3b3b3] hover:text-white transition-colors cursor-pointer"
               >
-                Manage Vault
+                {platform === 'crunchyroll' ? 'Manage Watchlist' : 'Manage My List'}
               </button>
             </div>
 
-            <div className="no-scrollbar flex gap-4 overflow-x-auto pb-2">
+            <div className="no-scrollbar flex gap-2 sm:gap-2.5 overflow-x-auto pb-2">
               {history.slice(0, 12).map((rec) => (
                 <div
                   key={rec.key}
@@ -102,18 +158,18 @@ export default function HomePage({ onInspect }: HomePageProps) {
                       }),
                     )
                   }
-                  className="group relative w-[250px] sm:w-[275px] shrink-0 cursor-pointer overflow-hidden rounded-xl border border-purple-500/25 bg-[#120924] dx-card-hover"
+                  className="group relative w-[220px] sm:w-[255px] shrink-0 cursor-pointer overflow-hidden rounded-[4px] bg-[var(--dx-surface)] transition-transform duration-200 hover:scale-[1.04]"
                 >
-                  <div className="relative aspect-video w-full overflow-hidden">
+                  <div className="relative aspect-video w-full overflow-hidden bg-[#1a1a1a]">
                     <PosterArtwork
                       src={rec.backdrop || rec.poster}
                       alt={rec.title}
                       title={rec.title}
                       variant="backdrop"
                     />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#05020b] via-transparent to-transparent" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
-                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#05020b] shadow-xl">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-white bg-black/65 text-white shadow-xl">
                         <Play className="h-5 w-5 fill-current" />
                       </span>
                     </div>
@@ -124,22 +180,21 @@ export default function HomePage({ onInspect }: HomePageProps) {
                         e.stopPropagation();
                         deletePlayRecord(rec.key);
                       }}
-                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-lg bg-[#05020b]/85 text-purple-200 opacity-0 transition-opacity hover:bg-red-600 hover:text-white group-hover:opacity-100"
+                      className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/80 text-neutral-300 opacity-0 transition-opacity hover:bg-[var(--dx-accent)] hover:text-white group-hover:opacity-100"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  <div className="p-3">
-                    <h3 className="truncate font-display text-sm font-semibold text-white">
-                      {rec.title}
-                    </h3>
-                    <div className="mt-1 flex items-center gap-1.5 text-xs text-purple-300/75 font-mono-num">
-                      <span>
-                        {rec.mediaType === 'tv' ? `S${rec.season} · E${rec.episode}` : 'Feature'}
-                      </span>
-                      <span aria-hidden="true">·</span>
-                      <span className="capitalize">{rec.provider}</span>
-                    </div>
+
+                  <div className="h-[3px] w-full bg-[#4d4d4d]">
+                    <div className="h-full w-2/5 bg-[var(--dx-accent)]" />
+                  </div>
+
+                  <div className="px-2.5 py-2">
+                    <p className="truncate text-xs font-semibold text-white">{rec.title}</p>
+                    <p className="mt-0.5 text-[11px] text-[#808080]">
+                      {rec.mediaType === 'tv' ? `S${rec.season}:E${rec.episode}` : 'Resume Title'}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -147,50 +202,112 @@ export default function HomePage({ onInspect }: HomePageProps) {
           </section>
         )}
 
-        {/* Top 10 Ranked Rails */}
-        {TOP_RATED_CATEGORIES.map((cat) => (
+        {/* Top 10 Ranked Rows */}
+        {topCategories.map((cat) => (
           <HorizontalRail
             key={cat.slug}
             title={cat.title}
-            subtitle={cat.subtitle}
             items={(rails[cat.slug] || []).slice(0, 10)}
             ranked
+            platform={platform}
             viewAllHref={`/curated/${cat.slug}`}
             onSelect={onInspect}
           />
         ))}
 
-        {/* Curated Cinema, Hindi, Anime & Series Rails */}
-        {HOME_CURATED_CATEGORIES.map((cat) => (
+        {/* Curated Platform Rows */}
+        {curatedCategories.map((cat) => (
           <HorizontalRail
             key={cat.slug}
             title={cat.title}
-            subtitle={cat.subtitle}
             items={rails[cat.slug] || []}
+            platform={platform}
             viewAllHref={`/curated/${cat.slug}`}
             onSelect={onInspect}
           />
         ))}
 
-        {/* Developer Crest Showcase Banner */}
-        <section className="mt-10 overflow-hidden rounded-2xl border border-purple-500/25 bg-gradient-to-r from-[#14082b] via-[#0d061a] to-[#190936] p-6 sm:p-10 dx-purple-glow">
+        {/* Complete Full Catalog Grid */}
+        {allCatalog.length > 0 && (
+          <section className="mt-8 border-t border-white/10 pt-8">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h2 className="font-display text-xl sm:text-2xl font-bold tracking-tight text-white">
+                  {platform === 'crunchyroll'
+                    ? 'All Anime Series & Movies'
+                    : platform === 'prime'
+                      ? 'All Titles Included with Prime'
+                      : isKids
+                        ? 'All Kids Movies & Cartoons'
+                        : 'All Movies & Shows on Netflix'}
+                </h2>
+                <p className="mt-1 text-xs sm:text-sm text-[#b3b3b3]">
+                  {theme.tagline}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => navigateTo(isKids ? '/discover?type=kids' : '/discover?type=all')}
+                className="rounded-[4px] border border-white/30 px-4 py-2 text-xs font-semibold text-white transition-colors hover:border-[var(--dx-accent)] hover:bg-white/10 cursor-pointer whitespace-nowrap"
+              >
+                Open Full Filter Catalog
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
+              {allCatalog
+                .filter((item) => isAllowedOnPlatform(item, platform, isKids))
+                .map((item) => (
+                  <MediaCard
+                    key={`all-${item.mediaType}-${item.id}`}
+                    item={item}
+                    variant="poster"
+                    platform={platform}
+                    onSelect={onInspect}
+                  />
+                ))}
+            </div>
+
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                disabled={loadingMoreCatalog}
+                onClick={loadMoreCatalog}
+                className="inline-flex h-10 items-center gap-2 rounded-[4px] border border-white/40 bg-[var(--dx-surface)] px-7 text-sm font-semibold text-white transition-colors hover:border-[var(--dx-accent)] hover:bg-[var(--dx-surface-elevated)] disabled:opacity-50 cursor-pointer"
+              >
+                <span>
+                  {loadingMoreCatalog
+                    ? 'Loading more titles...'
+                    : platform === 'crunchyroll'
+                      ? 'Load More Anime'
+                      : 'Load More Titles'}
+                </span>
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* Ghost Dexter Brand Strip */}
+        <section className="mt-12 rounded-md border border-white/10 bg-[var(--dx-surface)] p-6 sm:p-8">
           <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-4">
               <img
                 src={DEXTERX_LOGO_URL}
                 alt="Dexterx Cenima Emblem"
                 referrerPolicy="no-referrer"
-                className="h-20 w-20 shrink-0 rounded-2xl border border-purple-400/50 object-cover shadow-[0_0_32px_rgba(168,85,247,0.45)]"
+                className="h-16 w-16 shrink-0 rounded-md border border-white/15 object-cover"
               />
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-purple-300">
-                  Dexterx Cenima
+                <p className="text-xs font-bold uppercase tracking-widest text-[var(--dx-accent)]">
+                  Dexterx {theme.name}
                 </p>
-                <h2 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-                  Built for Midnight Cinema
+                <h2 className="mt-0.5 font-display text-xl font-extrabold tracking-tight text-white sm:text-2xl">
+                  Engineered by Ghost Dexter
                 </h2>
-                <p className="mt-1 text-sm text-purple-200/80">
-                  Engineered by <span className="font-semibold text-white">Ghost Dexter</span> — global movies, Hindi blockbusters, anime, and series in obsidian-violet.
+                <p className="mt-1 text-xs sm:text-sm text-[#b3b3b3]">
+                  {theme.tagline} — switch universes anytime from the top bar.
                 </p>
               </div>
             </div>
@@ -198,17 +315,21 @@ export default function HomePage({ onInspect }: HomePageProps) {
             <div className="flex flex-wrap items-center gap-3 shrink-0">
               <button
                 type="button"
-                onClick={() => navigateTo('/discover?type=hindi')}
-                className="h-10 rounded-lg bg-purple-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-purple-500 whitespace-nowrap cursor-pointer"
+                onClick={() => navigateTo(isKids ? '/discover?type=kids' : '/discover?type=all')}
+                className="h-10 rounded-[4px] bg-[var(--dx-accent)] px-5 text-sm font-bold text-white transition-colors hover:bg-[var(--dx-accent-hover)] whitespace-nowrap cursor-pointer"
               >
-                Explore Hindi &amp; Global
+                {platform === 'crunchyroll'
+                  ? 'Browse All Anime'
+                  : isKids
+                    ? 'Browse All Kids'
+                    : 'Browse All Titles'}
               </button>
               <button
                 type="button"
                 onClick={() => navigateTo('/my')}
-                className="h-10 rounded-lg border border-purple-400/35 bg-[#120924] px-5 text-sm font-semibold text-purple-100 transition-colors hover:border-purple-300 hover:bg-purple-900/50 whitespace-nowrap cursor-pointer"
+                className="h-10 rounded-[4px] border border-white/35 bg-[var(--dx-surface-elevated)] px-5 text-sm font-semibold text-white transition-colors hover:border-white whitespace-nowrap cursor-pointer"
               >
-                Open My Vault
+                {platform === 'crunchyroll' ? 'Watchlist' : platform === 'prime' ? 'My Stuff' : 'My List'}
               </button>
             </div>
           </div>
