@@ -2,6 +2,7 @@ import { Search, Trash2, Users, X } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 import type { MediaSummary, PersonResult } from '../shared/types';
+import { fetchDiscoverTitles, fetchSearchTitles } from '../lib/api';
 import { navigateTo, useAppLocation } from '../lib/router';
 import {
   addSearchHistory,
@@ -41,26 +42,25 @@ export default function SearchPage({ onInspect }: SearchPageProps) {
   useEffect(() => {
     const trimmed = submittedQuery.trim();
     if (!trimmed) {
-      fetch('/api/tmdb/discover?media=movie&sort_by=popularity.desc')
-        .then((res) => (res.ok ? res.json() : null))
+      let cancelled = false;
+      fetchDiscoverTitles(new URLSearchParams({ media: 'movie', sort_by: 'popularity.desc' }))
         .then((data) => {
-          if (Array.isArray(data?.list)) {
-            setResults(data.list.slice(0, 12));
-          }
+          if (!cancelled) setResults(data.list.slice(0, 12));
         })
         .catch(() => {});
       setPeople([]);
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     let cancelled = false;
     setLoading(true);
-    fetch(`/api/tmdb/search?q=${encodeURIComponent(trimmed)}`)
-      .then((res) => (res.ok ? res.json() : null))
+    fetchSearchTitles(trimmed)
       .then((data) => {
-        if (!cancelled && data) {
-          setResults(Array.isArray(data.results) ? data.results : []);
-          setPeople(Array.isArray(data.people) ? data.people : []);
+        if (!cancelled) {
+          setResults(data.results);
+          setPeople(data.people);
         }
       })
       .catch(() => {})

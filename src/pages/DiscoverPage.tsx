@@ -1,6 +1,7 @@
 import { RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { DiscoverCategoryFilter, MediaSummary } from '../shared/types';
+import { fetchDiscoverTitles } from '../lib/api';
 import { navigateTo, useAppLocation } from '../lib/router';
 import MediaCard from '../components/MediaCard';
 
@@ -66,13 +67,11 @@ export default function DiscoverPage({ onInspect }: DiscoverPageProps) {
       qs.set('genres', selectedGenres.join(','));
     }
 
-    fetch(`/api/tmdb/discover?${qs.toString()}`)
-      .then((res) => (res.ok ? res.json() : null))
+    fetchDiscoverTitles(qs)
       .then((data) => {
-        if (!cancelled && data) {
-          const list: MediaSummary[] = Array.isArray(data.list) ? data.list : [];
-          setItems((prev) => (page === 1 ? list : [...prev, ...list]));
-          setTotalPages(Number(data.total_pages || 1));
+        if (!cancelled) {
+          setItems((prev) => (page === 1 ? data.list : [...prev, ...data.list]));
+          setTotalPages(data.total_pages);
         }
       })
       .catch(() => {})

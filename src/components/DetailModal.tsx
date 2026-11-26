@@ -1,6 +1,7 @@
 import { Bookmark, Film, Play, Tv, Users, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { MediaDetail, MediaSummary } from '../shared/types';
+import { fetchTitleDetail } from '../lib/api';
 import { buildPlayUrl, navigateTo } from '../lib/router';
 import { isFavorited, subscribeVaultUpdates, toggleFavorite } from '../lib/vaultStorage';
 import MediaCard from './MediaCard';
@@ -38,11 +39,10 @@ export default function DetailModal({ item, onClose, onSelectOther }: DetailModa
     setLoading(true);
     setShowTrailer(false);
 
-    fetch(`/api/tmdb/detail?tmdbId=${item.id}&mediaType=${item.mediaType}`)
-      .then((res) => (res.ok ? res.json() : null))
+    fetchTitleDetail(item.id, item.mediaType)
       .then((data) => {
-        if (!cancelled && data?.detail) {
-          setDetail(data.detail);
+        if (!cancelled && data) {
+          setDetail(data);
         }
       })
       .catch(() => {})

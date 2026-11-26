@@ -1,6 +1,7 @@
 import { ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { MediaSummary, PersonResult } from '../shared/types';
+import { fetchPersonDetail } from '../lib/api';
 import { navigateTo } from '../lib/router';
 import MediaCard from '../components/MediaCard';
 
@@ -16,11 +17,10 @@ export default function PersonPage({ personId, onInspect }: PersonPageProps) {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetch(`/api/tmdb/person/${personId}`)
-      .then((res) => (res.ok ? res.json() : null))
+    fetchPersonDetail(personId)
       .then((data) => {
-        if (!cancelled && data?.person) {
-          setPerson(data.person);
+        if (!cancelled && data) {
+          setPerson(data);
         }
       })
       .catch(() => {})

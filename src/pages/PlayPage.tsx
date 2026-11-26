@@ -16,6 +16,7 @@ import {
   PLAYER_PROVIDERS,
 } from '../shared/playerSources';
 import type { MediaDetail, MediaSummary, PlayerProviderId, SeasonDetail } from '../shared/types';
+import { fetchTitleDetail, resolvePlayerSession } from '../lib/api';
 import { buildPlayUrl, navigateTo, useAppLocation } from '../lib/router';
 import {
   isFavorited,
@@ -56,11 +57,10 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/tmdb/detail?tmdbId=${tmdbId}&mediaType=${mediaType}`)
-      .then((res) => (res.ok ? res.json() : null))
+    fetchTitleDetail(tmdbId, mediaType)
       .then((data) => {
-        if (!cancelled && data?.detail) {
-          setDetail(data.detail);
+        if (!cancelled && data) {
+          setDetail(data);
         }
       })
       .catch(() => {});
@@ -71,19 +71,15 @@ export default function PlayPage({ onInspect }: PlayPageProps) {
 
   useEffect(() => {
     let cancelled = false;
-    const qs = new URLSearchParams({
-      tmdbId: String(tmdbId),
-      type: mediaType,
+    resolvePlayerSession({
+      tmdbId,
+      mediaType,
       provider,
-      season: String(season),
-      episode: String(episode),
-      color: '9333ea',
-    });
-
-    fetch(`/api/player/resolve?${qs.toString()}`)
-      .then((res) => (res.ok ? res.json() : null))
+      season,
+      episode,
+    })
       .then((data) => {
-        if (!cancelled && data) {
+        if (!cancelled) {
           setEmbedUrl(data.embedUrl || '');
           setSeasonDetail(data.seasonDetail || null);
         }

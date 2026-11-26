@@ -1,5 +1,5 @@
 import { Film } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface PosterArtworkProps {
   src?: string;
@@ -19,6 +19,10 @@ export default function PosterArtwork({
   variant = 'poster',
 }: PosterArtworkProps) {
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
 
   if (!src || failed) {
     return (

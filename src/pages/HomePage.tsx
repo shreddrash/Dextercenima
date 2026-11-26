@@ -2,6 +2,7 @@ import { Play, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { HOME_CURATED_CATEGORIES, TOP_RATED_CATEGORIES } from '../shared/curatedCategories';
 import type { MediaSummary, PlayRecord } from '../shared/types';
+import { fetchDiscoverTitles, fetchHeroTitles } from '../lib/api';
 import { buildPlayUrl, navigateTo } from '../lib/router';
 import { deletePlayRecord, getAllPlayRecords, subscribeVaultUpdates } from '../lib/vaultStorage';
 import HeroSpotlight from '../components/HeroSpotlight';
@@ -27,11 +28,10 @@ export default function HomePage({ onInspect }: HomePageProps) {
   useEffect(() => {
     let cancelled = false;
 
-    fetch('/api/tmdb/hero')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!cancelled && Array.isArray(data?.results)) {
-          setHeroItems(data.results);
+    fetchHeroTitles()
+      .then((results) => {
+        if (!cancelled) {
+          setHeroItems(results);
         }
       })
       .catch(() => {});
@@ -42,10 +42,9 @@ export default function HomePage({ onInspect }: HomePageProps) {
         media: cat.mediaType,
         ...cat.query,
       });
-      fetch(`/api/tmdb/discover?${qs.toString()}`)
-        .then((res) => (res.ok ? res.json() : null))
+      fetchDiscoverTitles(qs)
         .then((data) => {
-          if (!cancelled && Array.isArray(data?.list)) {
+          if (!cancelled) {
             setRails((prev) => ({ ...prev, [cat.slug]: data.list }));
           }
         })

@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getCuratedCategoryBySlug } from '../shared/curatedCategories';
 import type { MediaSummary } from '../shared/types';
+import { fetchDiscoverTitles } from '../lib/api';
 import { navigateTo } from '../lib/router';
 import MediaCard from '../components/MediaCard';
 
@@ -28,10 +29,9 @@ export default function CuratedPage({ slug, onInspect }: CuratedPageProps) {
       ...category.query,
     });
 
-    fetch(`/api/tmdb/discover?${qs.toString()}`)
-      .then((res) => (res.ok ? res.json() : null))
+    fetchDiscoverTitles(qs)
       .then((data) => {
-        if (!cancelled && Array.isArray(data?.list)) {
+        if (!cancelled) {
           setItems(data.list);
         }
       })
