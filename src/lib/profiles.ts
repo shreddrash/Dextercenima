@@ -55,6 +55,26 @@ export const DEFAULT_PROFILES_BY_PLATFORM: Record<StreamingPlatform, UserProfile
       createdAt: 1,
     },
   ],
+  sports: [
+    {
+      id: 'sports-ghost-dexter',
+      name: 'Ghost Dexter',
+      avatarId: 'sports-emerald',
+      isKids: false,
+      platform: 'sports',
+      createdAt: 1,
+    },
+  ],
+  worldchannels: [
+    {
+      id: 'world-ghost-dexter',
+      name: 'Ghost Dexter',
+      avatarId: 'netflix-purple',
+      isKids: false,
+      platform: 'worldchannels',
+      createdAt: 1,
+    },
+  ],
 };
 
 export const AVATAR_CHOICES: Array<{ id: ProfileAvatarId; label: string }> = [
@@ -222,7 +242,9 @@ export function deleteProfile(profileId: string, platform = getActivePlatform())
 }
 
 export function shouldShowProfileGate(platform = getActivePlatform()): boolean {
-  if (platform === 'crunchyroll') return false;
+  if (platform === 'crunchyroll' || platform === 'sports' || platform === 'worldchannels') {
+    return false;
+  }
   if (typeof window === 'undefined') return false;
   if (window.location.pathname === '/play') return false;
   try {

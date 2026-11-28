@@ -12,8 +12,11 @@ import type {
   PersonResult,
   PlayerProviderId,
   SeasonDetail,
+  SportMatch,
   StreamingPlatform,
+  WorldChannel,
 } from '../shared/types';
+import { VERIFIED_LIVE_SPORTS_CHANNELS } from '../shared/sportsCatalog';
 import {
   getAllVaultItems,
   getHeroVaultItems,
@@ -303,6 +306,104 @@ export async function resolvePlayerSession(opts: {
     seasonDetail: fallbackSeason,
     episodeCount: normalizedType === 'movie' ? 1 : fallbackSeason?.episodeCount || 10,
   };
+}
+
+export async function fetchSportsFeed(): Promise<{
+  football: SportMatch[];
+  cricket: SportMatch[];
+  channels: SportMatch[];
+  languages: string[];
+  updatedAt: string;
+  counts: {
+    live: number;
+    upcoming: number;
+    football: number;
+    cricket: number;
+  };
+}> {
+  const data = await fetchApiJson<{
+    football?: SportMatch[];
+    cricket?: SportMatch[];
+    channels?: SportMatch[];
+    languages?: string[];
+    updatedAt?: string;
+    counts?: {
+      live: number;
+      upcoming: number;
+      football: number;
+      cricket: number;
+    };
+  }>('/api/sports/feed', 14000);
+
+  if (data && Array.isArray(data.football) && Array.isArray(data.cricket)) {
+    const channels = Array.isArray(data.channels) ? data.channels : VERIFIED_LIVE_SPORTS_CHANNELS;
+    const languages = Array.isArray(data.languages)
+      ? data.languages
+      : ['English', 'Hindi'];
+    return {
+      football: data.football,
+      cricket: data.cricket,
+      channels,
+      languages,
+      updatedAt: data.updatedAt || new Date().toISOString(),
+      counts: data.counts || {
+        live: [...data.football, ...data.cricket].filter((m) => m.matchStatus === 'live').length,
+        upcoming: [...data.football, ...data.cricket].filter((m) => m.matchStatus === 'upcoming').length,
+        football: data.football.length,
+        cricket: data.cricket.length,
+      },
+    };
+  }
+
+  const football = VERIFIED_LIVE_SPORTS_CHANNELS.filter((c) => c.sport === 'football');
+  const cricket = VERIFIED_LIVE_SPORTS_CHANNELS.filter((c) => c.sport === 'cricket');
+  return {
+    football,
+    cricket,
+    channels: VERIFIED_LIVE_SPORTS_CHANNELS,
+    languages: ['English', 'Hindi'],
+    updatedAt: new Date().toISOString(),
+    counts: {
+      live: VERIFIED_LIVE_SPORTS_CHANNELS.length,
+      upcoming: 0,
+      football: football.length,
+      cricket: cricket.length,
+    },
+  };
+}
+
+export async function fetchWorldChannelsFeed(): Promise<{
+  channels: WorldChannel[];
+  total: number;
+  updatedAt: string;
+}> {
+  const data = await fetchApiJson<{
+    channels?: WorldChannel[];
+    total?: number;
+    updatedAt?: string;
+  }>('/api/world-channels/feed', 15000);
+
+  if (data && Array.isArray(data.channels)) {
+    return {
+      channels: data.channels,
+      total: data.total ?? data.channels.length,
+      updatedAt: data.updatedAt || new Date().toISOString(),
+    };
+  }
+
+  return {
+    channels: [],
+    total: 0,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export async function checkWorldChannelLive(url: string): Promise<boolean> {
+  const data = await fetchApiJson<{ ok?: boolean }>(
+    `/api/world-channels/check?url=${encodeURIComponent(url)}`,
+    6000,
+  );
+  return Boolean(data?.ok);
 }
 
 export { PLAYER_PROVIDERS };

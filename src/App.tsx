@@ -22,10 +22,12 @@ import { useAppLocation } from './lib/router';
 import CuratedPage from './pages/CuratedPage';
 import DiscoverPage from './pages/DiscoverPage';
 import HomePage from './pages/HomePage';
+import LiveWorldChannelPage from './pages/LiveWorldChannelPage';
 import MyVaultPage from './pages/MyVaultPage';
 import PersonPage from './pages/PersonPage';
 import PlayPage from './pages/PlayPage';
 import SearchPage from './pages/SearchPage';
+import SportsArenaPage from './pages/SportsArenaPage';
 import type { MediaSummary, StreamingPlatform, UserProfile } from './shared/types';
 
 export default function App() {
@@ -75,7 +77,8 @@ export default function App() {
       setSelectedItem(null);
     });
     const unsubGate = subscribeProfileGateOpen(() => {
-      if (getActivePlatform() !== 'crunchyroll') {
+      const current = getActivePlatform();
+      if (current !== 'crunchyroll' && current !== 'sports' && current !== 'worldchannels') {
         setGateOpen(true);
       }
     });
@@ -94,11 +97,24 @@ export default function App() {
     setHasPickedPlatform(true);
     setLauncherOpen(false);
     setSplashOpen(true);
-    setGateOpen(platform !== 'crunchyroll' && shouldShowProfileGate(platform));
+    setGateOpen(
+      platform !== 'crunchyroll' &&
+        platform !== 'sports' &&
+        platform !== 'worldchannels' &&
+        shouldShowProfileGate(platform),
+    );
   };
 
   const renderPage = () => {
     const path = loc.pathname;
+
+    if (activePlatform === 'sports') {
+      return <SportsArenaPage />;
+    }
+
+    if (activePlatform === 'worldchannels') {
+      return <LiveWorldChannelPage />;
+    }
 
     if (path === '/discover') {
       return (
@@ -201,7 +217,14 @@ export default function App() {
       />
 
       <ProfileGateModal
-        open={gateOpen && !splashOpen && !launcherOpen && activePlatform !== 'crunchyroll'}
+        open={
+          gateOpen &&
+          !splashOpen &&
+          !launcherOpen &&
+          activePlatform !== 'crunchyroll' &&
+          activePlatform !== 'sports' &&
+          activePlatform !== 'worldchannels'
+        }
         platform={activePlatform}
         onClose={() => setGateOpen(false)}
         onProfileSelected={(profile) => {

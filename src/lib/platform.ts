@@ -63,10 +63,46 @@ export const PLATFORM_THEMES: Record<StreamingPlatform, PlatformThemeMeta> = {
     elevated: '#242730',
     hasProfileGate: false,
   },
+  sports: {
+    id: 'sports',
+    name: 'Dexterx Sports',
+    shortName: 'Sports',
+    tagline: 'Live & Upcoming Football and Cricket',
+    accent: '#10B981',
+    accentHover: '#34D399',
+    accentHexNoHash: '10b981',
+    bg: '#060A09',
+    surface: '#0C1412',
+    card: '#111C19',
+    elevated: '#182622',
+    hasProfileGate: false,
+  },
+  worldchannels: {
+    id: 'worldchannels',
+    name: 'Live World Channel',
+    shortName: 'World TV',
+    tagline: 'Global Live Sports & World Broadcast Channels',
+    accent: '#8B5CF6',
+    accentHover: '#A78BFA',
+    accentHexNoHash: '8b5cf6',
+    bg: '#07060C',
+    surface: '#100D1B',
+    card: '#171326',
+    elevated: '#201B34',
+    hasProfileGate: false,
+  },
 };
 
 export function normalizePlatform(val?: string | null): StreamingPlatform {
-  if (val === 'prime' || val === 'crunchyroll' || val === 'netflix') return val;
+  if (
+    val === 'prime' ||
+    val === 'crunchyroll' ||
+    val === 'netflix' ||
+    val === 'sports' ||
+    val === 'worldchannels'
+  ) {
+    return val;
+  }
   return 'netflix';
 }
 
@@ -120,11 +156,7 @@ export function setActivePlatform(
 export function shouldShowPlatformLauncher(): boolean {
   if (typeof window === 'undefined') return false;
   if (window.location.pathname === '/play') return false;
-  try {
-    return sessionStorage.getItem(LAUNCHER_SEEN_SESSION_KEY) !== '1';
-  } catch {
-    return false;
-  }
+  return true;
 }
 
 export function openPlatformLauncher(): void {

@@ -38,6 +38,28 @@
   --dx-red-hover: #ff8a34;
 }
 
+:root[data-platform="sports"] {
+  --dx-bg: #060a09;
+  --dx-surface: #0c1412;
+  --dx-surface-card: #111c19;
+  --dx-surface-elevated: #182622;
+  --dx-accent: #10b981;
+  --dx-accent-hover: #34d399;
+  --dx-red: #10b981;
+  --dx-red-hover: #34d399;
+}
+
+:root[data-platform="worldchannels"] {
+  --dx-bg: #07060c;
+  --dx-surface: #100d1b;
+  --dx-surface-card: #171326;
+  --dx-surface-elevated: #201b34;
+  --dx-accent: #8b5cf6;
+  --dx-accent-hover: #a78bfa;
+  --dx-red: #8b5cf6;
+  --dx-red-hover: #a78bfa;
+}
+
 @layer base {
   html {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
@@ -82,6 +104,14 @@
   -webkit-text-stroke: 3.5px rgba(244, 117, 33, 0.72);
 }
 
+:root[data-platform="sports"] .dx-rank-stroke {
+  -webkit-text-stroke: 3.5px rgba(16, 185, 129, 0.72);
+}
+
+:root[data-platform="worldchannels"] .dx-rank-stroke {
+  -webkit-text-stroke: 3.5px rgba(139, 92, 246, 0.75);
+}
+
 @media (min-width: 1024px) {
   .dx-rank-stroke {
     -webkit-text-stroke: 4px #6b6b6b;
@@ -91,6 +121,12 @@
   }
   :root[data-platform="crunchyroll"] .dx-rank-stroke {
     -webkit-text-stroke: 4px rgba(244, 117, 33, 0.8);
+  }
+  :root[data-platform="sports"] .dx-rank-stroke {
+    -webkit-text-stroke: 4px rgba(16, 185, 129, 0.8);
+  }
+  :root[data-platform="worldchannels"] .dx-rank-stroke {
+    -webkit-text-stroke: 4px rgba(139, 92, 246, 0.8);
   }
 }
 

@@ -17,7 +17,10 @@ const SIZE_MAP = {
 };
 
 const BG_MAP: Record<
-  Exclude<ProfileAvatarId, 'dexter-crest' | 'netflix-kids' | 'prime-ghost' | 'crunchyroll-orange'>,
+  Exclude<
+    ProfileAvatarId,
+    'dexter-crest' | 'netflix-kids' | 'prime-ghost' | 'crunchyroll-orange' | 'sports-emerald'
+  >,
   { bg: string; shine: string }
 > = {
   'netflix-red': { bg: '#E50914', shine: '#b80710' },
@@ -86,6 +89,30 @@ export default function ProfileAvatar({
           <circle cx="35.5" cy="34.5" r="15.5" fill="#F47521" />
           <circle cx="38" cy="32" r="9.5" fill="#ffffff" />
           <circle cx="40.5" cy="30" r="4" fill="#F47521" />
+        </svg>
+      </div>
+    );
+  }
+
+  if (avatarId === 'sports-emerald') {
+    return (
+      <div
+        className={`relative overflow-hidden shrink-0 ${sizeCls} ${className}`}
+        style={{
+          background: 'linear-gradient(145deg, #10B981 0%, #047857 55%, #06281E 100%)',
+        }}
+        aria-label={name}
+      >
+        <svg viewBox="0 0 64 64" className="h-full w-full p-2" aria-hidden="true">
+          <path
+            d="M32 8 L52 16 V32 C52 44 43 52 32 56 C21 52 12 44 12 32 V16 Z"
+            fill="none"
+            stroke="#FFFFFF"
+            strokeWidth="4"
+            strokeLinejoin="round"
+          />
+          <polygon points="32,19 39,25 36,34 28,34 25,25" fill="#FFFFFF" />
+          <line x1="32" y1="34" x2="32" y2="46" stroke="#F59E0B" strokeWidth="3.5" strokeLinecap="round" />
         </svg>
       </div>
     );

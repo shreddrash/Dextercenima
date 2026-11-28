@@ -14,17 +14,33 @@ export default function Footer({ platform, activeProfile }: FooterProps) {
   const theme = PLATFORM_THEMES[platform];
 
   const columns =
-    platform === 'crunchyroll'
+    platform === 'sports'
       ? [
-          { label: 'Anime Home', href: '/' },
-          { label: 'Anime Series', href: '/discover?type=tv' },
-          { label: 'Anime Movies', href: '/discover?type=movie' },
-          { label: 'Top Anime', href: '/curated/crunchyroll-top-anime' },
-          { label: 'Shonen Hits', href: '/curated/crunchyroll-shonen' },
-          { label: 'Dark Fantasy', href: '/curated/crunchyroll-dark-fantasy' },
-          { label: 'Watchlist', href: '/my' },
-          { label: 'All Anime', href: '/discover?type=all' },
+          { label: 'All Live & Upcoming', href: '/' },
+          { label: 'Live Now', href: '/?cat=live' },
+          { label: 'Football Live & Upcoming', href: '/?cat=football' },
+          { label: 'Cricket Live & Upcoming', href: '/?cat=cricket' },
         ]
+      : platform === 'worldchannels'
+        ? [
+            { label: 'All World Channels', href: '/' },
+            { label: 'North America', href: '/?region=North%20America' },
+            { label: 'UK & Europe', href: '/?region=UK%20%26%20Europe' },
+            { label: 'Asia & Cricket', href: '/?region=Asia%20%26%20Cricket' },
+            { label: 'Latin America', href: '/?region=Latin%20America' },
+            { label: 'Global Feeds', href: '/?region=Global' },
+          ]
+        : platform === 'crunchyroll'
+        ? [
+            { label: 'Anime Home', href: '/' },
+            { label: 'Anime Series', href: '/discover?type=tv' },
+            { label: 'Anime Movies', href: '/discover?type=movie' },
+            { label: 'Top Anime', href: '/curated/crunchyroll-top-anime' },
+            { label: 'Shonen Hits', href: '/curated/crunchyroll-shonen' },
+            { label: 'Dark Fantasy', href: '/curated/crunchyroll-dark-fantasy' },
+            { label: 'Watchlist', href: '/my' },
+            { label: 'All Anime', href: '/discover?type=all' },
+          ]
       : platform === 'prime'
         ? [
             { label: 'Prime Home', href: '/' },
@@ -101,7 +117,9 @@ export default function Footer({ platform, activeProfile }: FooterProps) {
               Switch Streaming App
             </button>
 
-            {platform !== 'crunchyroll' && (
+            {platform !== 'crunchyroll' &&
+              platform !== 'sports' &&
+              platform !== 'worldchannels' && (
               <button
                 type="button"
                 onClick={() => openProfileGate()}

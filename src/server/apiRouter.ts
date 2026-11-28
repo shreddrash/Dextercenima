@@ -31,6 +31,586 @@ import {
   queryVaultDiscover,
   searchVaultCatalog,
 } from '../shared/vaultCatalog';
+import {
+  CRICKET_ENGLISH_STREAMS,
+  CRICKET_HINDI_STREAMS,
+  FOOTBALL_ENGLISH_STREAMS,
+  FOOTBALL_HINDI_STREAMS,
+  SPORTS_IMAGES,
+  VERIFIED_LIVE_SPORTS_CHANNELS,
+} from '../shared/sportsCatalog';
+import type { SportKind, SportMatch, SportStreamSource, WorldChannel } from '../shared/types';
+
+const SPORTS_JSON_FEED_URL =
+  'https://raw.githubusercontent.com/byte-capsule/FanCode-Hls-Fetcher/main/Fancode_hls_m3u8.Json';
+const WORLD_CHANNELS_M3U_URL = 'https://iptv-org.github.io/iptv/categories/sports.m3u';
+const ESPN_SOCCER_HEADER_URL =
+  'https://site.web.api.espn.com/apis/v2/scoreboard/header?sport=soccer';
+const ESPN_CRICKET_HEADER_URL =
+  'https://site.web.api.espn.com/apis/v2/scoreboard/header?sport=cricket';
+
+function cleanSportText(input: unknown): string {
+  return String(input || '')
+    .replace(/fan\s*code/gi, 'Dexterx Sports')
+    .replace(/\bfc[-\s]?web\b/gi, '')
+    .trim();
+}
+
+function classifySportKind(catRaw: string, tournament: string, title: string): SportKind {
+  const hay = `${catRaw} ${tournament} ${title}`.toLowerCase();
+  if (
+    /\b(football|soccer|fifa|uefa|champions league|premier league|la liga|laliga|bundesliga|serie a|ligue 1|afc|isl|europa|copa|euro)\b/.test(
+      hay,
+    ) ||
+    hay.includes('ft-flags')
+  ) {
+    return 'football';
+  }
+  if (
+    /\b(cricket|t20|odi|test|ipl|bbl|psl|cpl|bpl|ranji|sheffield|shield|ashes|icc|bcci|super smash|hundred|blast|trophy|plunket|csa)\b/.test(
+      hay,
+    ) ||
+    hay.includes('cr-flags')
+  ) {
+    return 'cricket';
+  }
+  return 'other';
+}
+
+function isSafePublicHttpUrl(rawUrl: string): URL | null {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+    if (parsed.username || parsed.password) return null;
+    const host = parsed.hostname.toLowerCase();
+    if (
+      !host ||
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '0.0.0.0' ||
+      host === '::1' ||
+      host.endsWith('.local') ||
+      host.endsWith('.internal') ||
+      /^10\./.test(host) ||
+      /^192\.168\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(host) ||
+      /^169\.254\./.test(host)
+    ) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function encodeSportsAssetUrl(rawUrl?: string | null): string {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  const safe = isSafePublicHttpUrl(rawUrl.trim());
+  if (!safe) return '';
+  const token = Buffer.from(safe.href, 'utf8').toString('base64url');
+  return `/api/sports/asset?t=${encodeURIComponent(token)}`;
+}
+
+function normalizeAudioLangLabel(raw: string): string {
+  const s = raw.trim().toLowerCase();
+  if (!s) return '';
+  if (s === 'en' || s === 'eng' || s.includes('english')) return 'English';
+  if (s === 'hi' || s === 'hin' || s.includes('hindi')) return 'Hindi';
+  if (s === 'es' || s === 'spa' || s.includes('spanish') || s.includes('espanol') || s.includes('español')) return 'Spanish';
+  if (s === 'fr' || s === 'fra' || s === 'fre' || s.includes('french') || s.includes('fran')) return 'French';
+  if (s === 'ar' || s === 'ara' || s.includes('arabic')) return 'Arabic';
+  if (s === 'tr' || s === 'tur' || s.includes('turkish') || s.includes('türk')) return 'Turkish';
+  if (s === 'ta' || s === 'tam' || s.includes('tamil')) return 'Tamil';
+  if (s === 'te' || s === 'tel' || s.includes('telugu')) return 'Telugu';
+  if (s === 'pt' || s === 'por' || s.includes('portug')) return 'Portuguese';
+  return '';
+}
+
+async function probeHlsManifest(url: string): Promise<{ ok: boolean; languages: string[] }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3200);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        Accept: '*/*',
+      },
+    });
+    if (!res.ok) return { ok: false, languages: [] };
+    const text = await res.text();
+    if (!text.includes('#EXTM3U')) return { ok: false, languages: [] };
+
+    const detected = new Set<string>();
+    for (const line of text.split(/\r?\n/)) {
+      if (!line.includes('TYPE=AUDIO')) continue;
+      const nameMatch = line.match(/NAME="([^"]+)"/i);
+      const langMatch = line.match(/LANGUAGE="([^"]+)"/i);
+      const parsed =
+        normalizeAudioLangLabel(nameMatch?.[1] || '') ||
+        normalizeAudioLangLabel(langMatch?.[1] || '');
+      if (parsed) detected.add(parsed);
+    }
+    return { ok: true, languages: Array.from(detected) };
+  } catch {
+    return { ok: false, languages: [] };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function probeHlsPlayable(url: string): Promise<boolean> {
+  const res = await probeHlsManifest(url);
+  return res.ok;
+}
+
+function teamTokensMatch(a: string, b: string): boolean {
+  const clean = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length >= 3 && !['fc', 'sc', 'club', 'united', 'city', 'region'].includes(w));
+  const ta = clean(a);
+  const tb = clean(b);
+  return ta.some((w) => tb.includes(w));
+}
+
+function parseHexTeamColor(raw?: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const cleaned = raw.trim().replace(/^#/, '');
+  if (/^[0-9a-fA-F]{6}$/.test(cleaned) && cleaned.toLowerCase() !== 'ffffff' && cleaned.toLowerCase() !== '000000') {
+    return `#${cleaned}`;
+  }
+  return undefined;
+}
+
+function buildDualLanguageStreams(
+  sport: 'football' | 'cricket',
+  primaryStreams: SportStreamSource[],
+  liveCricketEn: SportStreamSource[],
+  liveCricketHi: SportStreamSource[],
+  liveFootballEn: SportStreamSource[],
+  liveFootballHi: SportStreamSource[],
+): SportStreamSource[] {
+  const enPool = sport === 'cricket' ? liveCricketEn : liveFootballEn;
+  const hiPool = sport === 'cricket' ? liveCricketHi : liveFootballHi;
+  const combined = [...primaryStreams, ...enPool.slice(0, 1), ...hiPool.slice(0, 1), ...enPool.slice(1), ...hiPool.slice(1)];
+  const seenUrl = new Set<string>();
+  const deduped: SportStreamSource[] = [];
+  for (const s of combined) {
+    if (!s.url || seenUrl.has(s.url)) continue;
+    seenUrl.add(s.url);
+    deduped.push(s);
+  }
+  return deduped;
+}
+
+function parseEspnHeaderEvents(
+  payload: any,
+  sport: 'football' | 'cricket',
+  upstreamLiveMatches: SportMatch[],
+  livePools: {
+    cricketEn: SportStreamSource[];
+    cricketHi: SportStreamSource[];
+    footballEn: SportStreamSource[];
+    footballHi: SportStreamSource[];
+  },
+): SportMatch[] {
+  const leagues: any[] = payload?.sports?.[0]?.leagues || [];
+  const results: SportMatch[] = [];
+  const seenIds = new Set<string>();
+
+  for (const league of leagues) {
+    const tournament = cleanSportText(league?.name || (sport === 'football' ? 'Football' : 'Cricket'));
+    const events: any[] = Array.isArray(league?.events) ? league.events : [];
+    for (const ev of events) {
+      const state = String(ev?.fullStatus?.type?.state || ev?.status || '').toLowerCase();
+      // STRICTLY LIVE ('in') OR UPCOMING ('pre') ONLY — NEVER past/completed ('post')
+      if (state !== 'in' && state !== 'pre') continue;
+
+      const evId = `${sport}-${ev.id}`;
+      if (seenIds.has(evId)) continue;
+      seenIds.add(evId);
+
+      const comps: any[] = Array.isArray(ev?.competitors) ? ev.competitors : [];
+      const home = comps[0] || {};
+      const away = comps[1] || {};
+      const team1 = cleanSportText(home.displayName || home.name || ev.shortName || 'Home');
+      const team2 = cleanSportText(away.displayName || away.name || 'Away');
+      const matchTitle =
+        team1 && team2 && team2 !== 'Away' ? `${team1} vs ${team2}` : cleanSportText(ev.name || tournament);
+
+      const s1 = home.score ? String(home.score).trim() : '';
+      const s2 = away.score ? String(away.score).trim() : '';
+      const scoreline =
+        state === 'in' && (s1 || s2)
+          ? `${home.abbreviation || team1} ${s1 || '0'} · ${away.abbreviation || team2} ${s2 || '0'}`
+          : undefined;
+
+      const rawDetail =
+        ev?.fullStatus?.type?.shortDetail ||
+        ev?.summary ||
+        (state === 'in' ? 'LIVE' : 'Upcoming');
+
+      const matchingUpstream = upstreamLiveMatches.find(
+        (u) =>
+          u.sport === sport &&
+          ((teamTokensMatch(team1, u.team1) && teamTokensMatch(team2, u.team2)) ||
+            (teamTokensMatch(team1, u.team2) && teamTokensMatch(team2, u.team1))),
+      );
+
+      const attachedStreams = buildDualLanguageStreams(
+        sport,
+        matchingUpstream ? matchingUpstream.streams : [],
+        livePools.cricketEn,
+        livePools.cricketHi,
+        livePools.footballEn,
+        livePools.footballHi,
+      );
+
+      const langs = Array.from(
+        new Set(
+          attachedStreams
+            .map((s) => (s.language === 'Hindi' ? 'Hindi' : 'English'))
+            .filter(Boolean),
+        ),
+      );
+
+      const homeLogoRaw = home.logo || home.logos?.[0]?.href || home.logoDark;
+      const awayLogoRaw = away.logo || away.logos?.[0]?.href || away.logoDark;
+
+      results.push({
+        id: evId,
+        sport,
+        isLive: state === 'in',
+        matchStatus: state === 'in' ? 'live' : 'upcoming',
+        kickoffTime: typeof ev.date === 'string' ? ev.date : undefined,
+        statusDetail: cleanSportText(rawDetail),
+        tournament,
+        title: matchTitle,
+        team1,
+        team2,
+        team1Badge: encodeSportsAssetUrl(homeLogoRaw) || undefined,
+        team2Badge: encodeSportsAssetUrl(awayLogoRaw) || undefined,
+        team1Color: parseHexTeamColor(home.color) || parseHexTeamColor(home.alternateColor),
+        team2Color: parseHexTeamColor(away.color) || parseHexTeamColor(away.alternateColor),
+        team1Score: s1 || undefined,
+        team2Score: s2 || undefined,
+        banner: sport === 'football' ? SPORTS_IMAGES.footballMatch : SPORTS_IMAGES.cricketMatch,
+        scoreline,
+        venue: cleanSportText(ev.location || '') || undefined,
+        languages: langs.length > 0 ? langs : ['English', 'Hindi'],
+        streams: attachedStreams,
+      });
+    }
+  }
+
+  // Live first, then upcoming soonest-first; prioritize fixtures with both club logos
+  results.sort((a, b) => {
+    if (a.matchStatus !== b.matchStatus) return a.matchStatus === 'live' ? -1 : 1;
+    const aHasLogos = a.team1Badge && a.team2Badge ? 1 : 0;
+    const bHasLogos = b.team1Badge && b.team2Badge ? 1 : 0;
+    if (aHasLogos !== bHasLogos && a.matchStatus === 'live') return bHasLogos - aHasLogos;
+    return (a.kickoffTime || '').localeCompare(b.kickoffTime || '');
+  });
+  return results;
+}
+
+function inferCountryFromTvgId(tvgId: string, rawCountry: string): string {
+  if (rawCountry && /^[A-Za-z]{2}$/.test(rawCountry.trim())) {
+    return rawCountry.trim().toUpperCase();
+  }
+  const m = tvgId.match(/\.([A-Za-z]{2})(?:@|$)/);
+  if (m) return m[1].toUpperCase();
+  return 'INTL';
+}
+
+function countryToRegion(code: string): string {
+  const c = code.toUpperCase();
+  if (['US', 'CA', 'MX'].includes(c)) return 'North America';
+  if (['UK', 'GB', 'ES', 'FR', 'DE', 'IT', 'PT', 'NL', 'BE', 'TR', 'IL', 'GR', 'PL', 'SE', 'NO', 'RO', 'RU', 'HR', 'AT', 'CH'].includes(c)) {
+    return 'UK & Europe';
+  }
+  if (['IN', 'PK', 'AU', 'NZ', 'BD', 'LK', 'JP', 'KR', 'CN', 'SG', 'TH', 'MY', 'ID', 'VN', 'PH', 'KH'].includes(c)) {
+    return 'Asia & Cricket';
+  }
+  if (['BR', 'AR', 'CO', 'CL', 'PE', 'VE', 'EC', 'UY', 'PY'].includes(c)) {
+    return 'Latin America';
+  }
+  if (['AE', 'SA', 'QA', 'EG', 'ZA', 'MA', 'KE', 'NG'].includes(c)) {
+    return 'Middle East & Africa';
+  }
+  return 'Global';
+}
+
+async function fetchWorldChannelsFeed(): Promise<{
+  channels: WorldChannel[];
+  updatedAt: string;
+}> {
+  const cacheKey = 'worldchannels:iptv-v1';
+  const cached = getCached<{ channels: WorldChannel[]; updatedAt: string }>(cacheKey);
+  if (cached) return cached;
+
+  const channels: WorldChannel[] = [];
+  const seenUrls = new Set<string>();
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch(WORLD_CHANNELS_M3U_URL, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 IPTV Proxy' },
+    });
+    clearTimeout(timer);
+
+    if (res.ok) {
+      const content = await res.text();
+      const lines = content.split(/\r?\n/);
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line.startsWith('#EXTINF:')) continue;
+
+        let urlLine = '';
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextLine = lines[j].trim();
+          if (nextLine && !nextLine.startsWith('#')) {
+            urlLine = nextLine;
+            break;
+          }
+        }
+        if (!urlLine || !isSafePublicHttpUrl(urlLine) || seenUrls.has(urlLine)) continue;
+        seenUrls.add(urlLine);
+
+        const attr = (key: string) => {
+          const match = line.match(new RegExp(`${key}="([^"]*)"`, 'i'));
+          return match ? match[1].trim() : '';
+        };
+
+        const tvgId = attr('tvg-id');
+        const tvgName = attr('tvg-name');
+        const rawLogo = attr('tvg-logo');
+        const rawCountry = attr('tvg-country');
+        const group = attr('group-title') || 'World Sports';
+        const commaIdx = line.lastIndexOf(',');
+        const displayNameRaw = commaIdx !== -1 ? line.slice(commaIdx + 1).trim() : tvgName;
+        const name = displayNameRaw || tvgName || `Channel ${channels.length + 1}`;
+        const qMatch = name.match(/\((4K|1080p|720p|576p|480p|360p|SD|HD)\)/i);
+        const quality = qMatch ? qMatch[1].toUpperCase() : 'LIVE';
+        const country = inferCountryFromTvgId(tvgId, rawCountry);
+        const region = countryToRegion(country);
+
+        channels.push({
+          id: tvgId ? `${tvgId}-${channels.length}` : `wc-${channels.length}`,
+          name,
+          logo: encodeSportsAssetUrl(rawLogo),
+          country,
+          region,
+          quality,
+          group,
+          url: urlLine,
+        });
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+
+  const payload = {
+    channels,
+    updatedAt: new Date().toISOString(),
+  };
+  if (channels.length > 0) {
+    setCached(cacheKey, payload, 5 * 60 * 1000);
+  }
+  return payload;
+}
+
+async function fetchLiveSportsFeed(): Promise<{
+  football: SportMatch[];
+  cricket: SportMatch[];
+  channels: SportMatch[];
+  languages: string[];
+  updatedAt: string;
+}> {
+  const cacheKey = 'sports:live-upcoming-v6';
+  const cached = getCached<{
+    football: SportMatch[];
+    cricket: SportMatch[];
+    channels: SportMatch[];
+    languages: string[];
+    updatedAt: string;
+  }>(cacheKey);
+  if (cached) return cached;
+
+  const probePool = async (pool: SportStreamSource[]): Promise<SportStreamSource[]> => {
+    const checked = await Promise.all(
+      pool.map(async (s) => ((await probeHlsPlayable(s.url)) ? s : null)),
+    );
+    const live = checked.filter((s): s is SportStreamSource => Boolean(s));
+    return live.length > 0 ? live : pool;
+  };
+
+  // Probe live English & Hindi Football + Cricket broadcast streams + upstream JSON + ESPN fixtures
+  const [
+    liveCricketEn,
+    liveCricketHi,
+    liveFootballEn,
+    liveFootballHi,
+    jsonPayload,
+    soccerHeader,
+    cricketHeader,
+  ] = await Promise.all([
+    probePool(CRICKET_ENGLISH_STREAMS),
+    probePool(CRICKET_HINDI_STREAMS),
+    probePool(FOOTBALL_ENGLISH_STREAMS),
+    probePool(FOOTBALL_HINDI_STREAMS),
+    fetchJsonWithTimeout(SPORTS_JSON_FEED_URL, {}, 7000),
+    fetchJsonWithTimeout(ESPN_SOCCER_HEADER_URL, {}, 7500),
+    fetchJsonWithTimeout(ESPN_CRICKET_HEADER_URL, {}, 7500),
+  ]);
+
+  const inferEnOrHi = (raw: string): 'English' | 'Hindi' => {
+    const low = raw.toLowerCase();
+    return low.includes('hindi') || low.includes('hin') ? 'Hindi' : 'English';
+  };
+
+  // Check upstream single-match live streams; normalize strictly to English/Hindi and pair complementary audio
+  const upstreamLiveStreams: SportMatch[] = [];
+  if (jsonPayload && Array.isArray(jsonPayload.matches)) {
+    const candidates = jsonPayload.matches.slice(0, 8);
+    const probed = await Promise.all(
+      candidates.map(async (m: Record<string, any>, idx: number): Promise<SportMatch | null> => {
+        const streamUrl = String(m.adfree_url || m.stream_link || m.dai_url || '').trim();
+        if (!streamUrl) return null;
+        const manifest = await probeHlsManifest(streamUrl);
+        if (!manifest.ok) return null;
+        const tournament = cleanSportText(m.event_name || 'Live Tournament');
+        const title = cleanSportText(m.match_name || `${m.team_1 || 'Team A'} vs ${m.team_2 || 'Team B'}`);
+        const sportRaw = classifySportKind(
+          String(m.event_catagory || m.event_category || ''),
+          tournament,
+          title,
+        );
+        const sport: 'football' | 'cricket' = sportRaw === 'cricket' ? 'cricket' : 'football';
+        const explicitLang = inferEnOrHi(
+          `${m.language || ''} ${m.audio_language || ''} ${title} ${tournament}`,
+        );
+        const primaryStream: SportStreamSource = {
+          id: `primary-${explicitLang.toLowerCase()}-${idx}`,
+          label: `Live HD (${explicitLang})`,
+          language: explicitLang,
+          quality: '1080p',
+          url: streamUrl,
+          kind: 'hls',
+        };
+        const streams = buildDualLanguageStreams(
+          sport,
+          [primaryStream],
+          liveCricketEn,
+          liveCricketHi,
+          liveFootballEn,
+          liveFootballHi,
+        );
+        const langs = Array.from(new Set(streams.map((s) => s.language)));
+
+        return {
+          id: `live-up-${m.match_id || idx}`,
+          sport,
+          isLive: true,
+          matchStatus: 'live',
+          statusDetail: `LIVE · ${langs.join(' & ')}`,
+          tournament,
+          title,
+          team1: cleanSportText(m.team_1 || title.split(/\s+vs\s+/i)[0] || 'Home'),
+          team2: cleanSportText(m.team_2 || title.split(/\s+vs\s+/i)[1] || 'Away'),
+          team1Badge: encodeSportsAssetUrl(m.team_1_flag) || undefined,
+          team2Badge: encodeSportsAssetUrl(m.team_2_flag) || undefined,
+          banner:
+            encodeSportsAssetUrl(m.banner || m.src) ||
+            (sport === 'football' ? SPORTS_IMAGES.footballMatch : SPORTS_IMAGES.cricketMatch),
+          languages: langs,
+          streams,
+        };
+      }),
+    );
+    for (const item of probed) {
+      if (item) upstreamLiveStreams.push(item);
+    }
+  }
+
+  // Hydrate curated 24/7 English & Hindi broadcast channels with live probed streams
+  const activeChannels: SportMatch[] = VERIFIED_LIVE_SPORTS_CHANNELS.map((ch) => {
+    const sport: 'football' | 'cricket' = ch.sport === 'cricket' ? 'cricket' : 'football';
+    const hasEn = ch.languages?.includes('English');
+    const hasHi = ch.languages?.includes('Hindi');
+    let streams: SportStreamSource[] = [];
+    if (hasEn && hasHi) {
+      streams = buildDualLanguageStreams(
+        sport,
+        [],
+        liveCricketEn,
+        liveCricketHi,
+        liveFootballEn,
+        liveFootballHi,
+      );
+    } else if (hasHi) {
+      streams = sport === 'cricket' ? liveCricketHi : liveFootballHi;
+    } else {
+      streams = sport === 'cricket' ? liveCricketEn : liveFootballEn;
+    }
+    return {
+      ...ch,
+      languages: Array.from(new Set(streams.map((s) => s.language))),
+      streams,
+    };
+  });
+
+  const allLiveChannels = [...upstreamLiveStreams, ...activeChannels];
+
+  const livePools = {
+    cricketEn: liveCricketEn,
+    cricketHi: liveCricketHi,
+    footballEn: liveFootballEn,
+    footballHi: liveFootballHi,
+  };
+
+  const footballFixtures = parseEspnHeaderEvents(
+    soccerHeader,
+    'football',
+    upstreamLiveStreams,
+    livePools,
+  );
+  const cricketFixtures = parseEspnHeaderEvents(
+    cricketHeader,
+    'cricket',
+    upstreamLiveStreams,
+    livePools,
+  );
+
+  // Live streaming broadcast channels first, followed by real live & upcoming fixtures (all playable live in EN & HI)
+  const football = [
+    ...allLiveChannels.filter((c) => c.sport === 'football'),
+    ...footballFixtures,
+  ];
+  const cricket = [
+    ...allLiveChannels.filter((c) => c.sport === 'cricket'),
+    ...cricketFixtures,
+  ];
+
+  const payload = {
+    football,
+    cricket,
+    channels: allLiveChannels,
+    languages: ['English', 'Hindi'],
+    updatedAt: new Date().toISOString(),
+  };
+  setCached(cacheKey, payload, 90 * 1000);
+  return payload;
+}
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_IMG_W500 = 'https://image.tmdb.org/t/p/w500';
@@ -657,7 +1237,7 @@ function rewriteBingrPlaylist(body: string, base: URL): string {
 }
 
 function normalizePlatformQuery(val?: string | null): StreamingPlatform {
-  if (val === 'prime' || val === 'crunchyroll' || val === 'netflix') return val;
+  if (val === 'prime' || val === 'crunchyroll' || val === 'netflix' || val === 'sports') return val;
   return 'netflix';
 }
 
@@ -1511,6 +2091,146 @@ export function createApiRouter(): express.Router {
       return res.send(buffer);
     } catch {
       return res.status(502).send('Upstream media relay failed');
+    } finally {
+      clearTimeout(timer);
+    }
+  });
+
+  // ================= DEXTERX SPORTS API (LIVE & UPCOMING + COMMENTARY LANGUAGES) =================
+  router.get('/sports/feed', async (_req, res) => {
+    const feed = await fetchLiveSportsFeed();
+    return res.json({
+      football: feed.football,
+      cricket: feed.cricket,
+      channels: feed.channels,
+      languages: feed.languages,
+      updatedAt: feed.updatedAt,
+      counts: {
+        live: [...feed.football, ...feed.cricket].filter((m) => m.matchStatus === 'live').length,
+        upcoming: [...feed.football, ...feed.cricket].filter((m) => m.matchStatus === 'upcoming').length,
+        football: feed.football.length,
+        cricket: feed.cricket.length,
+      },
+    });
+  });
+
+  // ================= LIVE WORLD CHANNEL API (FIFA-WORLD-CUP-2026 REPO) =================
+  router.get('/world-channels/feed', async (_req, res) => {
+    const feed = await fetchWorldChannelsFeed();
+    return res.json({
+      channels: feed.channels,
+      total: feed.channels.length,
+      updatedAt: feed.updatedAt,
+    });
+  });
+
+  router.get('/world-channels/check', async (req, res) => {
+    const rawUrl = String(req.query.url || '');
+    const target = isSafePublicHttpUrl(rawUrl);
+    if (!target) return res.status(400).json({ ok: false });
+    const ok = await probeHlsPlayable(target.href);
+    return res.json({ ok });
+  });
+
+  router.get('/sports/asset', async (req, res) => {
+    const token = String(req.query.t || '');
+    if (!token) return res.status(400).send('Missing asset token');
+    let decodedUrl = '';
+    try {
+      decodedUrl = Buffer.from(token, 'base64url').toString('utf8');
+    } catch {
+      return res.status(400).send('Invalid asset token');
+    }
+    const target = isSafePublicHttpUrl(decodedUrl);
+    if (!target) return res.status(400).send('Unsupported asset URL');
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+      const upstream = await fetch(target.href, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+        },
+      });
+      if (!upstream.ok) return res.status(404).send('Asset unavailable');
+      const ct = upstream.headers.get('content-type') || 'image/jpeg';
+      if (!ct.toLowerCase().startsWith('image/')) return res.status(400).send('Not an image');
+      res.setHeader('Content-Type', ct);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      const buf = Buffer.from(await upstream.arrayBuffer());
+      return res.send(buf);
+    } catch {
+      return res.status(404).send('Asset fetch error');
+    } finally {
+      clearTimeout(timer);
+    }
+  });
+
+  router.get('/sports/hls-proxy', async (req, res) => {
+    const rawUrl = String(req.query.url || '');
+    const target = isSafePublicHttpUrl(rawUrl);
+    if (!target) return res.status(400).send('Invalid stream URL');
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 14000);
+    try {
+      const upstream = await fetch(target.href, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          Accept: '*/*',
+        },
+      });
+      if (!upstream.ok) {
+        return res.status(upstream.status || 502).send('Stream unavailable');
+      }
+      const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
+      const finalUrl = new URL(upstream.url || target.href);
+      const isPlaylist =
+        finalUrl.pathname.endsWith('.m3u8') ||
+        contentType.toLowerCase().includes('mpegurl') ||
+        contentType.toLowerCase().includes('vnd.apple');
+
+      if (isPlaylist) {
+        const text = await upstream.text();
+        if (!text.trimStart().startsWith('#EXTM3U')) {
+          return res.status(502).send('Invalid HLS manifest');
+        }
+        const rewriteUri = (uri: string) => {
+          try {
+            const abs = new URL(uri, finalUrl);
+            if (!isSafePublicHttpUrl(abs.href)) return uri;
+            return `/api/sports/hls-proxy?url=${encodeURIComponent(abs.href)}`;
+          } catch {
+            return uri;
+          }
+        };
+        const rewritten = text
+          .split(/\r?\n/)
+          .map((line) => {
+            const trimmed = line.trim();
+            if (!trimmed) return line;
+            if (trimmed.startsWith('#')) {
+              return line.replace(/URI="([^"]+)"/g, (_, u: string) => `URI="${rewriteUri(u)}"`);
+            }
+            return rewriteUri(trimmed);
+          })
+          .join('\n');
+        res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+        res.setHeader('Cache-Control', 'no-store');
+        return res.send(rewritten);
+      }
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'no-store');
+      const buf = Buffer.from(await upstream.arrayBuffer());
+      return res.send(buf);
+    } catch {
+      return res.status(502).send('Live stream relay unavailable');
     } finally {
       clearTimeout(timer);
     }

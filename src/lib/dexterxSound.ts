@@ -349,6 +349,167 @@ function playCrunchyrollScore(ctx: AudioContext, t0: number): void {
   });
 }
 
+/**
+ * 4) DEXTERX SPORTS 4.6s Stadium Anthem Score:
+ * Kickoff whistle chirp -> Deep stadium crowd sub-bass impact -> Heroic championship brass chord
+ */
+function playSportsStadiumScore(ctx: AudioContext, t0: number): void {
+  const { sendToStage } = createStage(ctx, t0);
+
+  // Kickoff Referee Pea-Whistle Chirp (0.15s -> 0.52s)
+  const wStart = t0 + 0.15;
+  const whistle = ctx.createOscillator();
+  const whistleLfo = ctx.createOscillator();
+  const whistleLfoGain = ctx.createGain();
+  const wg = ctx.createGain();
+  whistle.type = 'sine';
+  whistle.frequency.setValueAtTime(2850, wStart);
+  whistle.frequency.exponentialRampToValueAtTime(2980, wStart + 0.18);
+  whistleLfo.type = 'sine';
+  whistleLfo.frequency.setValueAtTime(38, wStart);
+  whistleLfoGain.gain.setValueAtTime(95, wStart);
+  whistleLfo.connect(whistleLfoGain);
+  whistleLfoGain.connect(whistle.frequency);
+  wg.gain.setValueAtTime(0.001, wStart);
+  wg.gain.linearRampToValueAtTime(0.14, wStart + 0.025);
+  wg.gain.exponentialRampToValueAtTime(0.001, wStart + 0.36);
+  whistle.connect(wg);
+  sendToStage(wg);
+  whistle.start(wStart);
+  whistleLfo.start(wStart);
+  whistle.stop(wStart + 0.4);
+  whistleLfo.stop(wStart + 0.4);
+
+  // Dual Stadium Kick Drum Impacts (0.65s & 1.25s)
+  [0.65, 1.25].forEach((offset, idx) => {
+    const start = t0 + offset;
+    const kick = ctx.createOscillator();
+    const kg = ctx.createGain();
+    kick.type = 'sine';
+    kick.frequency.setValueAtTime(idx === 1 ? 118 : 98, start);
+    kick.frequency.exponentialRampToValueAtTime(40, start + (idx === 1 ? 0.9 : 0.35));
+    kg.gain.setValueAtTime(0.001, start);
+    kg.gain.linearRampToValueAtTime(idx === 1 ? 0.95 : 0.72, start + 0.012);
+    kg.gain.exponentialRampToValueAtTime(0.001, start + (idx === 1 ? 1.15 : 0.4));
+    kick.connect(kg);
+    sendToStage(kg);
+    kick.start(start);
+    kick.stop(start + 1.2);
+  });
+
+  // Heroic Stadium Brass Fanfare Motif (G4 -> B4 -> D5 -> G5)
+  const fanfare = [
+    { f: 392.0, at: 0.7, dur: 0.42 },
+    { f: 493.88, at: 0.98, dur: 0.42 },
+    { f: 587.33, at: 1.26, dur: 0.6 },
+    { f: 783.99, at: 1.65, dur: 2.5 },
+  ];
+  const brassFilter = ctx.createBiquadFilter();
+  brassFilter.type = 'lowpass';
+  brassFilter.frequency.setValueAtTime(2100, t0 + 0.65);
+  brassFilter.frequency.exponentialRampToValueAtTime(520, t0 + 4.3);
+  sendToStage(brassFilter);
+
+  fanfare.forEach((n) => {
+    const start = t0 + n.at;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(n.f, start);
+    g.gain.setValueAtTime(0.001, start);
+    g.gain.linearRampToValueAtTime(0.22, start + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.001, start + n.dur);
+    osc.connect(g);
+    g.connect(brassFilter);
+    osc.start(start);
+    osc.stop(start + n.dur + 0.05);
+  });
+
+  // Wide Championship Stadium Anthem Chord (1.65s -> 4.5s)
+  const chordStart = t0 + 1.65;
+  [98.0, 196.0, 246.94, 293.66, 392.0].forEach((freq, idx) => {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = idx === 0 ? 'sine' : 'triangle';
+    osc.frequency.setValueAtTime(freq, chordStart);
+    osc.detune.setValueAtTime((idx - 2) * 6, chordStart);
+    g.gain.setValueAtTime(0.001, chordStart);
+    g.gain.linearRampToValueAtTime(0.18 / (idx * 0.25 + 1), chordStart + 0.08);
+    g.gain.exponentialRampToValueAtTime(0.001, chordStart + 2.8);
+    osc.connect(g);
+    sendToStage(g);
+    osc.start(chordStart);
+    osc.stop(chordStart + 2.85);
+  });
+}
+
+/**
+ * 5) LIVE WORLD CHANNEL 4.6s Global Satellite Broadcast Score:
+ * Satellite shimmer pulse -> Warm sub-bass broadcast anchor -> Heroic global symphony chord (F#m/A/E)
+ */
+function playWorldChannelsScore(ctx: AudioContext, t0: number): void {
+  const { sendToStage } = createStage(ctx, t0);
+
+  // Satellite Telemetry Ping Sweep (0.12s -> 1.1s)
+  [
+    { f: 880, at: 0.12, dur: 0.35 },
+    { f: 1174.66, at: 0.34, dur: 0.35 },
+    { f: 1318.51, at: 0.56, dur: 0.45 },
+    { f: 1760, at: 0.85, dur: 0.9 },
+  ].forEach((n) => {
+    const start = t0 + n.at;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(n.f, start);
+    g.gain.setValueAtTime(0.001, start);
+    g.gain.linearRampToValueAtTime(0.24, start + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.001, start + n.dur);
+    osc.connect(g);
+    sendToStage(g);
+    osc.start(start);
+    osc.stop(start + n.dur + 0.05);
+  });
+
+  // Broadcast Anchor Bass Hit at 1.2s
+  const tDrop = t0 + 1.2;
+  const sub = ctx.createOscillator();
+  const subG = ctx.createGain();
+  sub.type = 'sine';
+  sub.frequency.setValueAtTime(82.41, tDrop);
+  sub.frequency.exponentialRampToValueAtTime(41.2, tDrop + 2.6);
+  subG.gain.setValueAtTime(0.001, tDrop);
+  subG.gain.linearRampToValueAtTime(0.88, tDrop + 0.03);
+  subG.gain.exponentialRampToValueAtTime(0.001, tDrop + 2.8);
+  sub.connect(subG);
+  sendToStage(subG);
+  sub.start(tDrop);
+  sub.stop(tDrop + 2.9);
+
+  // Lush Violet Wide Synth Broadcast Chord (1.2s -> 4.4s)
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(450, tDrop);
+  lp.frequency.exponentialRampToValueAtTime(2200, tDrop + 0.7);
+  lp.frequency.exponentialRampToValueAtTime(480, tDrop + 3.0);
+  sendToStage(lp);
+
+  [110.0, 164.81, 220.0, 277.18, 329.63, 440.0].forEach((freq, idx) => {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = idx % 2 === 0 ? 'triangle' : 'sawtooth';
+    osc.frequency.setValueAtTime(freq, tDrop);
+    osc.detune.setValueAtTime((idx - 2.5) * 8, tDrop);
+    g.gain.setValueAtTime(0.001, tDrop);
+    g.gain.linearRampToValueAtTime(0.15 / (idx * 0.25 + 1), tDrop + 0.08);
+    g.gain.exponentialRampToValueAtTime(0.001, tDrop + 3.1);
+    osc.connect(g);
+    g.connect(lp);
+    osc.start(tDrop);
+    osc.stop(tDrop + 3.15);
+  });
+}
+
 export async function playPlatformIntroSound(
   platform: StreamingPlatform = getActivePlatform(),
   force = false,
@@ -380,6 +541,10 @@ export async function playPlatformIntroSound(
     playPrimeScore(ctx, t0);
   } else if (platform === 'crunchyroll') {
     playCrunchyrollScore(ctx, t0);
+  } else if (platform === 'sports') {
+    playSportsStadiumScore(ctx, t0);
+  } else if (platform === 'worldchannels') {
+    playWorldChannelsScore(ctx, t0);
   } else {
     playNetflixScore(ctx, t0);
   }

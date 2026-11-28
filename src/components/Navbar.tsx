@@ -4,13 +4,16 @@ import {
   ChevronDown,
   Clapperboard,
   Flame,
+  Globe,
   Grid2x2,
   Home,
   LogOut,
   Pencil,
   Play,
+  Radio,
   Search,
   Sparkles,
+  Tv,
   X,
 } from 'lucide-react';
 import type { FormEvent } from 'react';
@@ -123,9 +126,63 @@ export default function Navbar({ platform, activeProfile, onInspect }: NavbarPro
     };
   }, [quickQuery, searchOpen, isKids, platform]);
 
+  const catParam = loc.params.get('cat') || '';
+  const regionParam = loc.params.get('region') || '';
+
   const navItems =
-    platform === 'crunchyroll'
+    platform === 'sports'
       ? [
+          {
+            label: 'All Live & Upcoming',
+            href: '/',
+            active: loc.pathname === '/' && !catParam,
+          },
+          {
+            label: 'Live Now',
+            href: '/?cat=live',
+            active: loc.pathname === '/' && catParam === 'live',
+          },
+          {
+            label: 'Football',
+            href: '/?cat=football',
+            active: loc.pathname === '/' && catParam === 'football',
+          },
+          {
+            label: 'Cricket',
+            href: '/?cat=cricket',
+            active: loc.pathname === '/' && catParam === 'cricket',
+          },
+        ]
+      : platform === 'worldchannels'
+        ? [
+            {
+              label: 'All Channels',
+              href: '/',
+              active: loc.pathname === '/' && !regionParam,
+            },
+            {
+              label: 'North America',
+              href: '/?region=North%20America',
+              active: loc.pathname === '/' && regionParam === 'North America',
+            },
+            {
+              label: 'UK & Europe',
+              href: '/?region=UK%20%26%20Europe',
+              active: loc.pathname === '/' && regionParam === 'UK & Europe',
+            },
+            {
+              label: 'Asia & Cricket',
+              href: '/?region=Asia%20%26%20Cricket',
+              active: loc.pathname === '/' && regionParam === 'Asia & Cricket',
+            },
+            {
+              label: 'Global',
+              href: '/?region=Global',
+              active: loc.pathname === '/' && regionParam === 'Global',
+            },
+          ]
+      : platform === 'crunchyroll'
+        ? [
           { label: 'Home', href: '/', active: loc.pathname === '/' },
           {
             label: 'Anime Series',
@@ -277,7 +334,25 @@ export default function Navbar({ platform, activeProfile, onInspect }: NavbarPro
                 referrerPolicy="no-referrer"
                 className="h-8 w-8 sm:h-9 sm:w-9 rounded border border-white/15 object-cover"
               />
-              {platform === 'prime' ? (
+              {platform === 'sports' ? (
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-lg sm:text-xl font-black tracking-tight text-white">
+                    DEXTERX <span className="text-[#10B981]">SPORTS</span>
+                  </span>
+                  <span className="hidden sm:inline-flex items-center gap-1 rounded bg-[#10B981]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#10B981]">
+                    LIVE &amp; UPCOMING
+                  </span>
+                </div>
+              ) : platform === 'worldchannels' ? (
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-lg sm:text-xl font-black tracking-tight text-white">
+                    LIVE WORLD <span className="text-[#A78BFA]">CHANNEL</span>
+                  </span>
+                  <span className="hidden sm:inline-flex items-center gap-1 rounded bg-[#8B5CF6]/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-300">
+                    GLOBAL TV
+                  </span>
+                </div>
+              ) : platform === 'prime' ? (
                 <div className="flex items-center gap-1.5">
                   <span className="font-display text-lg sm:text-xl font-black tracking-tight text-white">
                     prime <span className="font-normal text-[#00A8E1]">video</span>
@@ -319,11 +394,15 @@ export default function Navbar({ platform, activeProfile, onInspect }: NavbarPro
                   }}
                   className={`text-[13px] whitespace-nowrap shrink-0 transition-colors ${
                     item.active
-                      ? platform === 'prime'
-                        ? 'font-bold text-[#00A8E1]'
-                        : platform === 'crunchyroll'
-                          ? 'font-bold text-[#F47521]'
-                          : 'font-bold text-white'
+                      ? platform === 'sports'
+                        ? 'font-bold text-[#10B981]'
+                        : platform === 'worldchannels'
+                          ? 'font-bold text-[#A78BFA]'
+                          : platform === 'prime'
+                            ? 'font-bold text-[#00A8E1]'
+                            : platform === 'crunchyroll'
+                              ? 'font-bold text-[#F47521]'
+                              : 'font-bold text-white'
                       : 'font-normal text-[#e5e5e5] hover:text-[#b3b3b3]'
                   }`}
                 >
@@ -335,129 +414,131 @@ export default function Navbar({ platform, activeProfile, onInspect }: NavbarPro
 
           {/* Right: Search, Switch App, Kids Toggle (Netflix), Notifications, Profile */}
           <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
-            {/* Desktop Instant Search */}
-            <div className="relative hidden md:flex items-center" ref={searchRef}>
-              {searchOpen ? (
-                <div className="relative">
-                  <form
-                    onSubmit={handleQuickSearch}
-                    className="flex items-center border border-white bg-black/95 px-2.5 py-1.5 shadow-2xl rounded-[4px]"
-                  >
-                    <Search className="mr-2 h-4 w-4 text-white shrink-0" />
-                    <input
-                      type="text"
-                      autoFocus
-                      value={quickQuery}
-                      onChange={(e) => setQuickQuery(e.target.value)}
-                      placeholder={
-                        platform === 'crunchyroll'
-                          ? 'Search anime: Solo Leveling, Demon Slayer...'
-                          : isKids
-                            ? 'Cartoons, kids movies...'
-                            : platform === 'prime'
-                              ? 'Search Prime: The Boys, Mirzapur, Fallout...'
-                              : 'Titles, people, genres'
-                      }
-                      className="w-60 bg-transparent text-xs text-white placeholder:text-[#8c8c8c] focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      aria-label="Close search"
-                      onClick={() => {
-                        setSearchOpen(false);
-                        setQuickQuery('');
-                      }}
-                      className="ml-1 text-neutral-300 hover:text-white cursor-pointer"
+            {/* Desktop Instant Search (hidden in Sports & Live World Channel which have dedicated live search bars) */}
+            {platform !== 'sports' && platform !== 'worldchannels' && (
+              <div className="relative hidden md:flex items-center" ref={searchRef}>
+                {searchOpen ? (
+                  <div className="relative">
+                    <form
+                      onSubmit={handleQuickSearch}
+                      className="flex items-center border border-white bg-black/95 px-2.5 py-1.5 shadow-2xl rounded-[4px]"
                     >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </form>
+                      <Search className="mr-2 h-4 w-4 text-white shrink-0" />
+                      <input
+                        type="text"
+                        autoFocus
+                        value={quickQuery}
+                        onChange={(e) => setQuickQuery(e.target.value)}
+                        placeholder={
+                          platform === 'crunchyroll'
+                            ? 'Search anime: Solo Leveling, Demon Slayer...'
+                            : isKids
+                              ? 'Cartoons, kids movies...'
+                              : platform === 'prime'
+                                ? 'Search Prime: The Boys, Mirzapur, Fallout...'
+                                : 'Titles, people, genres'
+                        }
+                        className="w-60 bg-transparent text-xs text-white placeholder:text-[#8c8c8c] focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        aria-label="Close search"
+                        onClick={() => {
+                          setSearchOpen(false);
+                          setQuickQuery('');
+                        }}
+                        className="ml-1 text-neutral-300 hover:text-white cursor-pointer"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </form>
 
-                  {quickQuery.trim().length >= 2 && (
-                    <div className="absolute right-0 top-10 w-[340px] border border-white/15 bg-[var(--dx-surface)] shadow-[0_20px_60px_rgba(0,0,0,0.95)]">
-                      {searchingLive ? (
-                        <div className="p-4 text-xs text-[#b3b3b3]">Searching {theme.name}...</div>
-                      ) : livePreview.length === 0 ? (
-                        <div className="p-4 text-xs text-[#b3b3b3]">
-                          No matches on {theme.name} for &ldquo;{quickQuery}&rdquo;
-                        </div>
-                      ) : (
-                        <div className="divide-y divide-white/10">
-                          {livePreview.map((item) => (
-                            <div
-                              key={`quick-${item.mediaType}-${item.id}`}
-                              onClick={() => {
-                                setSearchOpen(false);
-                                onInspect(item);
-                              }}
-                              className="flex items-center gap-3 px-3 py-2 hover:bg-[var(--dx-surface-elevated)] cursor-pointer"
-                            >
-                              <div className="h-11 w-20 shrink-0 overflow-hidden rounded-[2px] bg-[#222]">
-                                <PosterArtwork
-                                  src={item.backdrop || item.poster}
-                                  alt={item.title}
-                                  title={item.title}
-                                  variant="backdrop"
-                                />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-xs font-semibold text-white">
-                                  {item.title}
-                                </p>
-                                <p className="text-[11px] text-[#808080]">
-                                  {item.year} · {item.mediaType === 'tv' ? 'Series' : 'Film'}
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                aria-label={`Play ${item.title}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
+                    {quickQuery.trim().length >= 2 && (
+                      <div className="absolute right-0 top-10 w-[340px] border border-white/15 bg-[var(--dx-surface)] shadow-[0_20px_60px_rgba(0,0,0,0.95)]">
+                        {searchingLive ? (
+                          <div className="p-4 text-xs text-[#b3b3b3]">Searching {theme.name}...</div>
+                        ) : livePreview.length === 0 ? (
+                          <div className="p-4 text-xs text-[#b3b3b3]">
+                            No matches on {theme.name} for &ldquo;{quickQuery}&rdquo;
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-white/10">
+                            {livePreview.map((item) => (
+                              <div
+                                key={`quick-${item.mediaType}-${item.id}`}
+                                onClick={() => {
                                   setSearchOpen(false);
-                                  navigateTo(
-                                    buildPlayUrl({
-                                      tmdbId: item.id,
-                                      mediaType: item.mediaType,
-                                      title: item.title,
-                                      year: item.year,
-                                      poster: item.poster,
-                                      score: item.score,
-                                    }),
-                                  );
+                                  onInspect(item);
                                 }}
-                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/60 bg-black/50 text-white hover:bg-white hover:text-black cursor-pointer"
+                                className="flex items-center gap-3 px-3 py-2 hover:bg-[var(--dx-surface-elevated)] cursor-pointer"
                               >
-                                <Play className="h-3 w-3 fill-current" />
-                              </button>
-                            </div>
-                          ))}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const q = quickQuery.trim();
-                              setSearchOpen(false);
-                              navigateTo(`/search?q=${encodeURIComponent(q)}`);
-                            }}
-                            className="w-full py-2.5 text-center text-xs font-bold text-[var(--dx-accent)] hover:bg-[var(--dx-surface-elevated)] cursor-pointer"
-                          >
-                            See all results for &ldquo;{quickQuery.trim()}&rdquo; →
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  aria-label="Search"
-                  onClick={() => setSearchOpen(true)}
-                  className="flex h-9 w-9 items-center justify-center text-white hover:text-[#b3b3b3] transition-colors cursor-pointer"
-                >
-                  <Search className="h-5 w-5" />
-                </button>
-              )}
-            </div>
+                                <div className="h-11 w-20 shrink-0 overflow-hidden rounded-[2px] bg-[#222]">
+                                  <PosterArtwork
+                                    src={item.backdrop || item.poster}
+                                    alt={item.title}
+                                    title={item.title}
+                                    variant="backdrop"
+                                  />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-xs font-semibold text-white">
+                                    {item.title}
+                                  </p>
+                                  <p className="text-[11px] text-[#808080]">
+                                    {item.year} · {item.mediaType === 'tv' ? 'Series' : 'Film'}
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  aria-label={`Play ${item.title}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSearchOpen(false);
+                                    navigateTo(
+                                      buildPlayUrl({
+                                        tmdbId: item.id,
+                                        mediaType: item.mediaType,
+                                        title: item.title,
+                                        year: item.year,
+                                        poster: item.poster,
+                                        score: item.score,
+                                      }),
+                                    );
+                                  }}
+                                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/60 bg-black/50 text-white hover:bg-white hover:text-black cursor-pointer"
+                                >
+                                  <Play className="h-3 w-3 fill-current" />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const q = quickQuery.trim();
+                                setSearchOpen(false);
+                                navigateTo(`/search?q=${encodeURIComponent(q)}`);
+                              }}
+                              className="w-full py-2.5 text-center text-xs font-bold text-[var(--dx-accent)] hover:bg-[var(--dx-surface-elevated)] cursor-pointer"
+                            >
+                              See all results for &ldquo;{quickQuery.trim()}&rdquo; →
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    aria-label="Search"
+                    onClick={() => setSearchOpen(true)}
+                    className="flex h-9 w-9 items-center justify-center text-white hover:text-[#b3b3b3] transition-colors cursor-pointer"
+                  >
+                    <Search className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Switch Universe Button (Netflix / Prime / Crunchyroll) */}
             <button
@@ -497,177 +578,181 @@ export default function Navbar({ platform, activeProfile, onInspect }: NavbarPro
                 </button>
               ))}
 
-            {/* Notification Bell */}
-            <div className="relative hidden sm:block" ref={notifRef}>
-              <button
-                type="button"
-                aria-label="New arrivals notifications"
-                onClick={() => setNotifOpen((prev) => !prev)}
-                className="relative flex h-9 w-9 items-center justify-center text-white hover:text-[#b3b3b3] cursor-pointer"
-              >
-                <Bell className="h-5 w-5" />
-                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[var(--dx-accent)]" />
-              </button>
+            {/* Notification Bell & Profile Avatar (Hidden in zero-login Sports & Live World Channel) */}
+            {platform !== 'sports' && platform !== 'worldchannels' && (
+              <>
+                <div className="relative hidden sm:block" ref={notifRef}>
+                  <button
+                    type="button"
+                    aria-label="New arrivals notifications"
+                    onClick={() => setNotifOpen((prev) => !prev)}
+                    className="relative flex h-9 w-9 items-center justify-center text-white hover:text-[#b3b3b3] cursor-pointer"
+                  >
+                    <Bell className="h-5 w-5" />
+                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[var(--dx-accent)]" />
+                  </button>
 
-              {notifOpen && (
-                <div className="absolute right-0 top-12 w-80 border border-white/15 bg-black/95 shadow-2xl">
-                  <div className="border-b border-white/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-[#b3b3b3]">
-                    {platform === 'crunchyroll'
-                      ? 'Latest Anime Simulcasts'
-                      : platform === 'prime'
-                        ? 'New on Prime Video'
-                        : isKids
-                          ? 'New for Kids'
-                          : 'New Arrivals on Netflix'}
-                  </div>
-                  <div className="max-h-80 overflow-y-auto divide-y divide-white/10">
-                    {notifications.map((item) => (
-                      <button
-                        key={`notif-${item.mediaType}-${item.id}`}
-                        type="button"
-                        onClick={() => {
-                          setNotifOpen(false);
-                          onInspect(item);
-                        }}
-                        className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-white/10 cursor-pointer"
-                      >
-                        <div className="h-12 w-20 shrink-0 overflow-hidden rounded bg-[#222]">
-                          <PosterArtwork
-                            src={item.backdrop || item.poster}
-                            alt={item.title}
-                            title={item.title}
-                            variant="backdrop"
-                          />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-xs font-semibold text-white">{item.title}</p>
-                          <p className="text-[11px] text-[#808080]">
-                            {theme.shortName} · {item.year}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Profile Avatar Dropdown */}
-            <div className="relative" ref={profileRef}>
-              <button
-                type="button"
-                onClick={() => setProfileMenuOpen((prev) => !prev)}
-                aria-label={`Active profile: ${activeProfile.name}`}
-                className="flex items-center gap-1.5 cursor-pointer focus:outline-none"
-              >
-                <ProfileAvatar
-                  avatarId={activeProfile.avatarId}
-                  name={activeProfile.name}
-                  size="sm"
-                  className={platform === 'prime' ? '!rounded-full ring-1 ring-[#00A8E1]' : ''}
-                />
-                <ChevronDown
-                  className={`h-4 w-4 text-white transition-transform duration-200 ${
-                    profileMenuOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {profileMenuOpen && (
-                <div className="absolute right-0 top-11 w-56 border border-white/15 bg-black/95 py-2 shadow-2xl">
-                  <div className="space-y-1 px-2 pb-2 border-b border-white/10">
-                    {profiles.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => {
-                          setActiveProfile(p.id, true, platform);
-                          setProfileMenuOpen(false);
-                          navigateTo('/');
-                        }}
-                        className={`flex w-full items-center gap-2.5 rounded px-2 py-1.5 text-left text-xs transition-colors hover:underline cursor-pointer ${
-                          p.id === activeProfile.id
-                            ? 'font-bold text-white bg-white/10'
-                            : 'text-[#e5e5e5]'
-                        }`}
-                      >
-                        <ProfileAvatar
-                          avatarId={p.avatarId}
-                          name={p.name}
-                          size="xs"
-                          className={platform === 'prime' ? '!rounded-full' : ''}
-                        />
-                        <span className="truncate flex-1">{p.name}</span>
-                        {p.isKids && (
-                          <span className="text-[10px] font-bold uppercase text-sky-400">Kids</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="pt-1.5 px-2 space-y-1 text-xs text-[#e5e5e5]">
-                    {platform !== 'crunchyroll' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfileMenuOpen(false);
-                          openProfileGate();
-                        }}
-                        className="flex w-full items-center gap-2.5 rounded px-2 py-1.5 hover:bg-white/10 cursor-pointer"
-                      >
-                        <Pencil className="h-3.5 w-3.5 text-[#b3b3b3]" />
-                        <span>Manage Profiles</span>
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProfileMenuOpen(false);
-                        openPlatformLauncher();
-                      }}
-                      className="flex w-full items-center gap-2.5 rounded px-2 py-1.5 font-semibold text-[var(--dx-accent)] hover:bg-white/10 cursor-pointer"
-                    >
-                      <Grid2x2 className="h-3.5 w-3.5" />
-                      <span>Switch Streaming App</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProfileMenuOpen(false);
-                        navigateTo('/my');
-                      }}
-                      className="flex w-full items-center gap-2.5 rounded px-2 py-1.5 hover:bg-white/10 cursor-pointer"
-                    >
-                      <Bookmark className="h-3.5 w-3.5 text-[#b3b3b3]" />
-                      <span>
+                  {notifOpen && (
+                    <div className="absolute right-0 top-12 w-80 border border-white/15 bg-black/95 shadow-2xl">
+                      <div className="border-b border-white/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-[#b3b3b3]">
                         {platform === 'crunchyroll'
-                          ? 'Watchlist'
+                          ? 'Latest Anime Simulcasts'
                           : platform === 'prime'
-                            ? 'My Stuff'
-                            : `My List (${activeProfile.name})`}
-                      </span>
-                    </button>
-
-                    {isKids && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfileMenuOpen(false);
-                          exitKidsMode();
-                          navigateTo('/');
-                        }}
-                        className="flex w-full items-center gap-2.5 rounded px-2 py-1.5 text-[#E50914] font-semibold hover:bg-white/10 cursor-pointer"
-                      >
-                        <LogOut className="h-3.5 w-3.5" />
-                        <span>Exit Kids Mode</span>
-                      </button>
-                    )}
-                  </div>
+                            ? 'New on Prime Video'
+                            : isKids
+                              ? 'New for Kids'
+                              : 'New Arrivals on Netflix'}
+                      </div>
+                      <div className="max-h-80 overflow-y-auto divide-y divide-white/10">
+                        {notifications.map((item) => (
+                          <button
+                            key={`notif-${item.mediaType}-${item.id}`}
+                            type="button"
+                            onClick={() => {
+                              setNotifOpen(false);
+                              onInspect(item);
+                            }}
+                            className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-white/10 cursor-pointer"
+                          >
+                            <div className="h-12 w-20 shrink-0 overflow-hidden rounded bg-[#222]">
+                              <PosterArtwork
+                                src={item.backdrop || item.poster}
+                                alt={item.title}
+                                title={item.title}
+                                variant="backdrop"
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-semibold text-white">{item.title}</p>
+                              <p className="text-[11px] text-[#808080]">
+                                {theme.shortName} · {item.year}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+
+                {/* Profile Avatar Dropdown */}
+                <div className="relative" ref={profileRef}>
+                  <button
+                    type="button"
+                    onClick={() => setProfileMenuOpen((prev) => !prev)}
+                    aria-label={`Active profile: ${activeProfile.name}`}
+                    className="flex items-center gap-1.5 cursor-pointer focus:outline-none"
+                  >
+                    <ProfileAvatar
+                      avatarId={activeProfile.avatarId}
+                      name={activeProfile.name}
+                      size="sm"
+                      className={platform === 'prime' ? '!rounded-full ring-1 ring-[#00A8E1]' : ''}
+                    />
+                    <ChevronDown
+                      className={`h-4 w-4 text-white transition-transform duration-200 ${
+                        profileMenuOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {profileMenuOpen && (
+                    <div className="absolute right-0 top-11 w-56 border border-white/15 bg-black/95 py-2 shadow-2xl">
+                      <div className="space-y-1 px-2 pb-2 border-b border-white/10">
+                        {profiles.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveProfile(p.id, true, platform);
+                              setProfileMenuOpen(false);
+                              navigateTo('/');
+                            }}
+                            className={`flex w-full items-center gap-2.5 rounded px-2 py-1.5 text-left text-xs transition-colors hover:underline cursor-pointer ${
+                              p.id === activeProfile.id
+                                ? 'font-bold text-white bg-white/10'
+                                : 'text-[#e5e5e5]'
+                            }`}
+                          >
+                            <ProfileAvatar
+                              avatarId={p.avatarId}
+                              name={p.name}
+                              size="xs"
+                              className={platform === 'prime' ? '!rounded-full' : ''}
+                            />
+                            <span className="truncate flex-1">{p.name}</span>
+                            {p.isKids && (
+                              <span className="text-[10px] font-bold uppercase text-sky-400">Kids</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="pt-1.5 px-2 space-y-1 text-xs text-[#e5e5e5]">
+                        {platform !== 'crunchyroll' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setProfileMenuOpen(false);
+                              openProfileGate();
+                            }}
+                            className="flex w-full items-center gap-2.5 rounded px-2 py-1.5 hover:bg-white/10 cursor-pointer"
+                          >
+                            <Pencil className="h-3.5 w-3.5 text-[#b3b3b3]" />
+                            <span>Manage Profiles</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileMenuOpen(false);
+                            openPlatformLauncher();
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded px-2 py-1.5 font-semibold text-[var(--dx-accent)] hover:bg-white/10 cursor-pointer"
+                        >
+                          <Grid2x2 className="h-3.5 w-3.5" />
+                          <span>Switch Streaming App</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileMenuOpen(false);
+                            navigateTo('/my');
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded px-2 py-1.5 hover:bg-white/10 cursor-pointer"
+                        >
+                          <Bookmark className="h-3.5 w-3.5 text-[#b3b3b3]" />
+                          <span>
+                            {platform === 'crunchyroll'
+                              ? 'Watchlist'
+                              : platform === 'prime'
+                                ? 'My Stuff'
+                                : `My List (${activeProfile.name})`}
+                          </span>
+                        </button>
+
+                        {isKids && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setProfileMenuOpen(false);
+                              exitKidsMode();
+                              navigateTo('/');
+                            }}
+                            className="flex w-full items-center gap-2.5 rounded px-2 py-1.5 text-[#E50914] font-semibold hover:bg-white/10 cursor-pointer"
+                          >
+                            <LogOut className="h-3.5 w-3.5" />
+                            <span>Exit Kids Mode</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -677,88 +762,200 @@ export default function Navbar({ platform, activeProfile, onInspect }: NavbarPro
         aria-label="Mobile Curved Navigation"
         className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
       >
-        <div className="relative mx-auto flex h-16 w-full items-center justify-around rounded-t-[28px] border-t border-white/15 bg-[var(--dx-bg)]/96 px-2 pb-1 backdrop-blur-xl shadow-[0_-12px_36px_rgba(0,0,0,0.85)]">
-          <button
-            type="button"
-            onClick={() => navigateTo('/')}
-            className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
-              loc.pathname === '/' ? 'text-white' : 'text-[#808080]'
-            }`}
-          >
-            <Home className="h-5 w-5" />
-            <span>Home</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              navigateTo(isKids ? '/discover?type=kids' : '/discover?type=all')
-            }
-            className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
-              loc.pathname === '/discover' && typeParam !== 'hindi' ? 'text-white' : 'text-[#808080]'
-            }`}
-          >
-            <Clapperboard className="h-5 w-5" />
-            <span>
-              {platform === 'crunchyroll' ? 'Anime' : isKids ? 'Kids All' : 'All'}
-            </span>
-          </button>
-
-          {/* Elevated Curved Center Search Orb matching active Platform Accent */}
-          <button
-            type="button"
-            aria-label="Search"
-            onClick={() => navigateTo('/search')}
-            className="-mt-7 flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-4 border-[var(--dx-bg)] bg-[var(--dx-accent)] text-white shadow-[0_6px_24px_rgba(0,0,0,0.75)] transition-transform active:scale-95"
-          >
-            <Search className="h-6 w-6" />
-          </button>
-
-          {platform === 'crunchyroll' ? (
+        {platform === 'sports' ? (
+          <div className="relative mx-auto flex h-16 w-full items-center justify-around rounded-t-[28px] border-t border-emerald-500/20 bg-[var(--dx-bg)]/96 px-2 pb-1 backdrop-blur-xl shadow-[0_-12px_36px_rgba(0,0,0,0.85)]">
             <button
               type="button"
-              onClick={() => openPlatformLauncher()}
-              className="flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-semibold text-[#F47521] whitespace-nowrap"
-            >
-              <Grid2x2 className="h-5 w-5" />
-              <span>Apps</span>
-            </button>
-          ) : isKids ? (
-            <button
-              type="button"
-              onClick={() => {
-                exitKidsMode();
-                navigateTo('/');
-              }}
-              className="flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-semibold text-[#E50914] whitespace-nowrap"
-            >
-              <Sparkles className="h-5 w-5" />
-              <span>Exit Kids</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => navigateTo('/discover?type=hindi')}
+              onClick={() => navigateTo('/')}
               className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
-                loc.pathname === '/discover' && typeParam === 'hindi' ? 'text-white' : 'text-[#808080]'
+                !catParam ? 'text-[#10B981]' : 'text-[#808080]'
+              }`}
+            >
+              <Home className="h-5 w-5" />
+              <span>All</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateTo('/?cat=live')}
+              className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
+                catParam === 'live' ? 'text-[#10B981]' : 'text-[#808080]'
+              }`}
+            >
+              <Radio className="h-5 w-5" />
+              <span>Live</span>
+            </button>
+
+            <button
+              type="button"
+              aria-label="Switch Streaming App"
+              onClick={() => openPlatformLauncher()}
+              className="-mt-7 flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-4 border-[var(--dx-bg)] bg-[#10B981] text-[#04140E] shadow-[0_6px_24px_rgba(16,185,129,0.5)] transition-transform active:scale-95"
+            >
+              <Grid2x2 className="h-6 w-6" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateTo('/?cat=football')}
+              className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
+                catParam === 'football' ? 'text-[#10B981]' : 'text-[#808080]'
               }`}
             >
               <Flame className="h-5 w-5" />
-              <span>Hindi</span>
+              <span>Football</span>
             </button>
-          )}
 
-          <button
-            type="button"
-            onClick={() => navigateTo('/my')}
-            className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
-              loc.pathname === '/my' ? 'text-white' : 'text-[#808080]'
-            }`}
-          >
-            <Bookmark className="h-5 w-5" />
-            <span>{platform === 'crunchyroll' ? 'Watchlist' : platform === 'prime' ? 'My Stuff' : 'My List'}</span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => navigateTo('/?cat=cricket')}
+              className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
+                catParam === 'cricket' ? 'text-[#10B981]' : 'text-[#808080]'
+              }`}
+            >
+              <Sparkles className="h-5 w-5" />
+              <span>Cricket</span>
+            </button>
+          </div>
+        ) : platform === 'worldchannels' ? (
+          <div className="relative mx-auto flex h-16 w-full items-center justify-around rounded-t-[28px] border-t border-violet-500/25 bg-[var(--dx-bg)]/96 px-2 pb-1 backdrop-blur-xl shadow-[0_-12px_36px_rgba(0,0,0,0.85)]">
+            <button
+              type="button"
+              onClick={() => navigateTo('/')}
+              className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
+                !regionParam ? 'text-[#A78BFA]' : 'text-[#808080]'
+              }`}
+            >
+              <Tv className="h-5 w-5" />
+              <span>All TV</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateTo('/?region=Asia%20%26%20Cricket')}
+              className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
+                regionParam === 'Asia & Cricket' ? 'text-[#A78BFA]' : 'text-[#808080]'
+              }`}
+            >
+              <Flame className="h-5 w-5" />
+              <span>Asia</span>
+            </button>
+
+            <button
+              type="button"
+              aria-label="Switch Streaming App"
+              onClick={() => openPlatformLauncher()}
+              className="-mt-7 flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-4 border-[var(--dx-bg)] bg-[#8B5CF6] text-white shadow-[0_6px_24px_rgba(139,92,246,0.55)] transition-transform active:scale-95"
+            >
+              <Grid2x2 className="h-6 w-6" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateTo('/?region=UK%20%26%20Europe')}
+              className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
+                regionParam === 'UK & Europe' ? 'text-[#A78BFA]' : 'text-[#808080]'
+              }`}
+            >
+              <Radio className="h-5 w-5" />
+              <span>Europe</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateTo('/?region=Global')}
+              className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
+                regionParam === 'Global' ? 'text-[#A78BFA]' : 'text-[#808080]'
+              }`}
+            >
+              <Globe className="h-5 w-5" />
+              <span>Global</span>
+            </button>
+          </div>
+        ) : (
+          <div className="relative mx-auto flex h-16 w-full items-center justify-around rounded-t-[28px] border-t border-white/15 bg-[var(--dx-bg)]/96 px-2 pb-1 backdrop-blur-xl shadow-[0_-12px_36px_rgba(0,0,0,0.85)]">
+            <button
+              type="button"
+              onClick={() => navigateTo('/')}
+              className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
+                loc.pathname === '/' ? 'text-white' : 'text-[#808080]'
+              }`}
+            >
+              <Home className="h-5 w-5" />
+              <span>Home</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigateTo(isKids ? '/discover?type=kids' : '/discover?type=all')
+              }
+              className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
+                loc.pathname === '/discover' && typeParam !== 'hindi' ? 'text-white' : 'text-[#808080]'
+              }`}
+            >
+              <Clapperboard className="h-5 w-5" />
+              <span>
+                {platform === 'crunchyroll' ? 'Anime' : isKids ? 'Kids All' : 'All'}
+              </span>
+            </button>
+
+            {/* Elevated Curved Center Search Orb matching active Platform Accent */}
+            <button
+              type="button"
+              aria-label="Search"
+              onClick={() => navigateTo('/search')}
+              className="-mt-7 flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-4 border-[var(--dx-bg)] bg-[var(--dx-accent)] text-white shadow-[0_6px_24px_rgba(0,0,0,0.75)] transition-transform active:scale-95"
+            >
+              <Search className="h-6 w-6" />
+            </button>
+
+            {platform === 'crunchyroll' ? (
+              <button
+                type="button"
+                onClick={() => openPlatformLauncher()}
+                className="flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-semibold text-[#F47521] whitespace-nowrap"
+              >
+                <Grid2x2 className="h-5 w-5" />
+                <span>Apps</span>
+              </button>
+            ) : isKids ? (
+              <button
+                type="button"
+                onClick={() => {
+                  exitKidsMode();
+                  navigateTo('/');
+                }}
+                className="flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-semibold text-[#E50914] whitespace-nowrap"
+              >
+                <Sparkles className="h-5 w-5" />
+                <span>Exit Kids</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigateTo('/discover?type=hindi')}
+                className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
+                  loc.pathname === '/discover' && typeParam === 'hindi' ? 'text-white' : 'text-[#808080]'
+                }`}
+              >
+                <Flame className="h-5 w-5" />
+                <span>Hindi</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => navigateTo('/my')}
+              className={`flex min-h-[44px] min-w-[54px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap ${
+                loc.pathname === '/my' ? 'text-white' : 'text-[#808080]'
+              }`}
+            >
+              <Bookmark className="h-5 w-5" />
+              <span>{platform === 'crunchyroll' ? 'Watchlist' : platform === 'prime' ? 'My Stuff' : 'My List'}</span>
+            </button>
+          </div>
+        )}
       </nav>
     </>
   );

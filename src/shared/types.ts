@@ -1,6 +1,57 @@
 export type MediaType = 'movie' | 'tv';
 
-export type StreamingPlatform = 'netflix' | 'prime' | 'crunchyroll';
+export type StreamingPlatform =
+  | 'netflix'
+  | 'prime'
+  | 'crunchyroll'
+  | 'sports'
+  | 'worldchannels';
+
+export type SportKind = 'football' | 'cricket' | 'other';
+
+export interface SportStreamSource {
+  id: string;
+  label: string;
+  language: string;
+  quality?: string;
+  url: string;
+  kind: 'hls';
+}
+
+export interface SportMatch {
+  id: string;
+  sport: SportKind;
+  isLive: boolean;
+  matchStatus: 'live' | 'upcoming';
+  kickoffTime?: string;
+  statusDetail?: string;
+  tournament: string;
+  title: string;
+  team1: string;
+  team2: string;
+  team1Badge?: string;
+  team2Badge?: string;
+  team1Color?: string;
+  team2Color?: string;
+  team1Score?: string;
+  team2Score?: string;
+  banner: string;
+  scoreline?: string;
+  venue?: string;
+  languages?: string[];
+  streams: SportStreamSource[];
+}
+
+export interface WorldChannel {
+  id: string;
+  name: string;
+  logo: string;
+  country: string;
+  region: string;
+  quality: string;
+  group: string;
+  url: string;
+}
 
 export type DiscoverCategoryFilter = 'all' | 'movie' | 'tv' | 'anime' | 'hindi' | 'kids' | 'show';
 
@@ -137,7 +188,8 @@ export type ProfileAvatarId =
   | 'netflix-purple'
   | 'netflix-kids'
   | 'prime-ghost'
-  | 'crunchyroll-orange';
+  | 'crunchyroll-orange'
+  | 'sports-emerald';
 
 export interface UserProfile {
   id: string;
