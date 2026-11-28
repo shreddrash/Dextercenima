@@ -16,7 +16,14 @@ import type {
   StreamingPlatform,
   WorldChannel,
 } from '../shared/types';
-import { VERIFIED_LIVE_SPORTS_CHANNELS } from '../shared/sportsCatalog';
+import {
+  CRICKET_ENGLISH_STREAMS,
+  CRICKET_HINDI_STREAMS,
+  FOOTBALL_ENGLISH_STREAMS,
+  FOOTBALL_HINDI_STREAMS,
+  VERIFIED_LIVE_SPORTS_CHANNELS,
+} from '../shared/sportsCatalog';
+import { parseEspnHeaderEvents } from '../shared/sportsFeedParser';
 import {
   getAllVaultItems,
   getHeroVaultItems,
@@ -355,6 +362,52 @@ export async function fetchSportsFeed(): Promise<{
     };
   }
 
+  try {
+    const [soccerRes, cricketRes] = await Promise.all([
+      fetch('https://site.web.api.espn.com/apis/v2/scoreboard/header?sport=soccer'),
+      fetch('https://site.web.api.espn.com/apis/v2/scoreboard/header?sport=cricket'),
+    ]);
+    const soccerJson = soccerRes.ok ? await soccerRes.json() : null;
+    const cricketJson = cricketRes.ok ? await cricketRes.json() : null;
+    const livePools = {
+      cricketEn: CRICKET_ENGLISH_STREAMS,
+      cricketHi: CRICKET_HINDI_STREAMS,
+      footballEn: FOOTBALL_ENGLISH_STREAMS,
+      footballHi: FOOTBALL_HINDI_STREAMS,
+    };
+    const footballFixtures = soccerJson
+      ? parseEspnHeaderEvents(soccerJson, 'football', [], livePools)
+      : [];
+    const cricketFixtures = cricketJson
+      ? parseEspnHeaderEvents(cricketJson, 'cricket', [], livePools)
+      : [];
+
+    const football = [
+      ...VERIFIED_LIVE_SPORTS_CHANNELS.filter((c) => c.sport === 'football'),
+      ...footballFixtures,
+    ];
+    const cricket = [
+      ...VERIFIED_LIVE_SPORTS_CHANNELS.filter((c) => c.sport === 'cricket'),
+      ...cricketFixtures,
+    ];
+
+    return {
+      football,
+      cricket,
+      channels: VERIFIED_LIVE_SPORTS_CHANNELS,
+      languages: ['English', 'Hindi'],
+      updatedAt: new Date().toISOString(),
+      counts: {
+        live: [...football, ...cricket].filter((m) => m.matchStatus === 'live').length,
+        upcoming: [...football, ...cricket].filter((m) => m.matchStatus === 'upcoming').length,
+        football: football.length,
+        cricket: cricket.length,
+      },
+    };
+  } catch {
+    /* fallback below */
+  }
+
   const football = VERIFIED_LIVE_SPORTS_CHANNELS.filter((c) => c.sport === 'football');
   const cricket = VERIFIED_LIVE_SPORTS_CHANNELS.filter((c) => c.sport === 'cricket');
   return {
@@ -383,12 +436,66 @@ export async function fetchWorldChannelsFeed(): Promise<{
     updatedAt?: string;
   }>('/api/world-channels/feed', 15000);
 
-  if (data && Array.isArray(data.channels)) {
+  if (data && Array.isArray(data.channels) && data.channels.length > 0) {
     return {
       channels: data.channels,
       total: data.total ?? data.channels.length,
       updatedAt: data.updatedAt || new Date().toISOString(),
     };
+  }
+
+  try {
+    const res = await fetch('https://iptv-org.github.io/iptv/categories/sports.m3u');
+    if (res.ok) {
+      const content = await res.text();
+      const lines = content.split(/\r?\n/);
+      const channels: WorldChannel[] = [];
+      const seenUrls = new Set<string>();
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line.startsWith('#EXTINF:')) continue;
+        let urlLine = '';
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextLine = lines[j].trim();
+          if (nextLine && !nextLine.startsWith('#')) {
+            urlLine = nextLine;
+            break;
+          }
+        }
+        if (!urlLine || !/^https?:\/\//i.test(urlLine) || seenUrls.has(urlLine)) continue;
+        seenUrls.add(urlLine);
+        const attr = (key: string) => {
+          const m = line.match(new RegExp(`${key}="([^"]*)"`, 'i'));
+          return m ? m[1].trim() : '';
+        };
+        const tvgId = attr('tvg-id');
+        const tvgName = attr('tvg-name');
+        const logo = attr('tvg-logo');
+        const group = attr('group-title') || 'World Sports';
+        const commaIdx = line.lastIndexOf(',');
+        const name = (commaIdx !== -1 ? line.slice(commaIdx + 1).trim() : tvgName) || `Channel ${channels.length + 1}`;
+        const qMatch = name.match(/\((4K|1080p|720p|576p|480p|360p|SD|HD)\)/i);
+        const cMatch = tvgId.match(/\.([A-Za-z]{2})(?:@|$)/);
+        const country = cMatch ? cMatch[1].toUpperCase() : 'INTL';
+        channels.push({
+          id: tvgId ? `${tvgId}-${channels.length}` : `wc-${channels.length}`,
+          name,
+          logo,
+          country,
+          region: 'Global',
+          quality: qMatch ? qMatch[1].toUpperCase() : 'LIVE',
+          group,
+          url: urlLine,
+        });
+      }
+      return {
+        channels,
+        total: channels.length,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+  } catch {
+    /* ignore */
   }
 
   return {

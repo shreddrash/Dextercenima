@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build",
+    "build": "vite build && esbuild src/server/vercelApp.ts --bundle --platform=node --format=cjs --outfile=api/index.cjs --packages=external --footer:js=\"if(module.exports&&module.exports.default){const d=module.exports.default;module.exports=Object.assign(d,module.exports);}\"",
     "start": "tsx server.ts",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
